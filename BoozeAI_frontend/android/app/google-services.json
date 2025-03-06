@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "681703836270",
+    "project_id": "boozeai-80ade",
+    "storage_bucket": "boozeai-80ade.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:681703836270:android:7cd5344a9475b0aac7347f",
+        "android_client_info": {
+          "package_name": "com.boozeai_frontend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "681703836270-oli3eljhoc20ga0eljnt0as6sb8utlh6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.boozeai_frontend",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "681703836270-6q4v848tul61o6luu2t34m1spcfp87sj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4zKxb7FZ_6qAf6UrZvOHI-VE3Ap3_Vtg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "681703836270-6q4v848tul61o6luu2t34m1spcfp87sj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

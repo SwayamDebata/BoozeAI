@@ -2,8 +2,8 @@ const express = require("express");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
-const Drink = require("../models/drinksModel");
-const User = require("../models/userModel");
+const Drink = require("../../models/drinksModel");
+const User = require("../../models/userModel");
 const { v4: uuidv4 } = require("uuid"); 
 
 const router = express.Router();

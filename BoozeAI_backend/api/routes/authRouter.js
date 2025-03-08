@@ -2,7 +2,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
 const admin = require("firebase-admin");
-const User = require("../models/userModel");
+const User = require("../../models/userModel");
 
 const serviceAccount = require("../config/firebaseServiceAccount.json"); 
 

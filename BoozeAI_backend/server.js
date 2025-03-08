@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser");
 const connectDB = require("./config/dbConnection");
 const errorHandler = require("./middleware/errorHandler");
 const admin = require("firebase-admin");
+const serverless = require("serverless-http");
 
 dotenv.config();
 
@@ -34,3 +35,5 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🔥 Server running on port ${PORT}`));
+module.exports = app;
+module.exports.handler = serverless(app);

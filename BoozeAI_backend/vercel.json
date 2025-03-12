@@ -4,11 +4,5 @@
     "api/server.js": {
       "maxDuration": 60
     }
-  },
-  "routes": [
-    {
-      "src": "/api/routes/(.*)",
-      "dest": "api/server.js"
-    }
-  ]
+  }
 }

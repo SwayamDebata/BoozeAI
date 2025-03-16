@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, Linking, ActivityIndicator, StyleSheet, PermissionsAndroid, Platform } from "react-native";
+import { 
+  View, Text, FlatList, Linking, ActivityIndicator, 
+  StyleSheet, PermissionsAndroid, Platform, TouchableOpacity, Alert 
+} from "react-native";
 import axios from "axios";
 import Geolocation from "react-native-geolocation-service";
 
@@ -10,8 +13,6 @@ const NearbyScreen = () => {
   useEffect(() => {
     requestLocationPermission();
   }, []);
-
-
 
   const requestLocationPermission = async () => {
     if (Platform.OS === "android") {
@@ -26,7 +27,7 @@ const NearbyScreen = () => {
             buttonPositive: "Allow",
           }
         );
-  
+
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
           Alert.alert("Permission Denied", "Location access is needed to find nearby liquor stores.");
           console.log("Location permission denied");
@@ -36,7 +37,7 @@ const NearbyScreen = () => {
         console.warn("Permission request error:", err);
       }
     }
-  
+
     Geolocation.getCurrentPosition(
       (position) => {
         console.log("User Location:", position.coords);
@@ -50,12 +51,11 @@ const NearbyScreen = () => {
     );
   };
 
-  
   const fetchLiquorStores = async (latitude, longitude) => {
     try {
       console.log(`Fetching stores at: ${latitude}, ${longitude}`);
       const response = await axios.get(
-        `https://nominatim.openstreetmap.org/search`,
+        "https://nominatim.openstreetmap.org/search",
         {
           params: {
             q: "bar",
@@ -66,7 +66,7 @@ const NearbyScreen = () => {
           },
         }
       );
-      console.log("API Response:", response.data);  // ✅ Debugging log
+      console.log("API Response:", response.data);
       if (response.data.length === 0) {
         console.log("No stores found");
       }
@@ -77,34 +77,33 @@ const NearbyScreen = () => {
       setLoading(false);
     }
   };
-  
 
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#008080" />
-        <Text>Loading nearby liquor shops...</Text>
+        <ActivityIndicator size="large" color="#2A004E" />
+        <Text style={styles.loadingText}>Finding nearby liquor shops...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Nearby Liquor Shops</Text>
+      <Text style={styles.header}>🍸 Nearby Liquor Shops</Text>
       <FlatList
         data={shops}
         keyExtractor={(item) => item.place_id || item.osm_id.toString()}
         renderItem={({ item }) => (
           <View style={styles.shopContainer}>
             <Text style={styles.shopName}>{item.display_name}</Text>
-            <Text
-              style={styles.link}
+            <TouchableOpacity
+              style={styles.mapButton}
               onPress={() =>
                 Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`)
               }
             >
-              Open in Google Maps
-            </Text>
+              <Text style={styles.mapButtonText}>📍 Open in Google Maps</Text>
+            </TouchableOpacity>
           </View>
         )}
       />
@@ -118,26 +117,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "white",
+    backgroundColor: "#1A1A1A", // Dark mode background
   },
   header: {
     fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 10,
+    color: "#F1FAEE", // Soft white text
+    marginBottom: 15,
     textAlign: "center",
   },
   shopContainer: {
     padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    backgroundColor: "#2C2C2C", // Dark card background
+    marginBottom: 10,
+    borderRadius: 10,
   },
   shopName: {
     fontSize: 18,
     fontWeight: "bold",
+    color: "#F4A261", // Warm orange for shop names
+    marginBottom: 5,
   },
-  link: {
+  mapButton: {
+    backgroundColor: "#2A004E", // Deep Purple button
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 8,
+    alignItems: "center",
+  },
+  mapButtonText: {
+    color: "#FFFFFF",
     fontSize: 16,
-    color: "#ffffff",
-    marginTop: 5,
+    fontWeight: "bold",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#bbb",
   },
 });

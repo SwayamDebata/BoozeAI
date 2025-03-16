@@ -20,7 +20,7 @@ const HomeScreen = () => {
     const [token, setToken] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
 
-    const API_URL = "http://10.0.2.2:5001/api/drinks/suggest";
+    const API_URL = "https://boozeai.onrender.com/api/drinks/suggest";
 
     useEffect(() => {
         const fetchToken = async () => {
@@ -45,11 +45,11 @@ const HomeScreen = () => {
             navigation.replace("AuthScreen");
             return;
         }
-    
+
         setLoading(true);
         setError(null);
         setDrinkSuggestion(null);
-    
+
         try {
             const response = await fetch(API_URL, {
                 method: "POST",
@@ -65,16 +65,16 @@ const HomeScreen = () => {
                     instructions,
                 }),
             });
-    
+
             const data = await response.json();
             console.log("API Response Data:", data);
-    
+
             if (response.ok) {
                 if (data && typeof data === "object" && data.suggestion && data.id) {  // Fix: Check 'id' instead of 'drinkId'
-                    setDrinkSuggestion({ 
-                        id: data.id, 
+                    setDrinkSuggestion({
+                        id: data.id,
                         name: "Suggested Drink",
-                        description: data.suggestion 
+                        description: data.suggestion
                     });
                     setModalVisible(true); // Show modal on success
                 } else {
@@ -82,7 +82,7 @@ const HomeScreen = () => {
                     console.error("Unexpected API response:", data);
                 }
             }
-             else if (response.status === 401) {
+            else if (response.status === 401) {
                 Alert.alert("Session Expired", "Please log in again.");
                 await AsyncStorage.removeItem("token"); // Ensure the token is removed
                 navigation.replace("AuthScreen");
@@ -96,7 +96,7 @@ const HomeScreen = () => {
             setLoading(false);
         }
     };
-    
+
 
     const addIngredient = () => {
         if (newIngredient.trim()) {
@@ -106,9 +106,9 @@ const HomeScreen = () => {
     };
     const formatDescription = (description) => {
         if (!description) return "";
-    
+
         const parts = description.split(/(\*\*.*?\*\*|##.*?\n|---)/); // Split on **bold**, ## headings, and ---
-        
+
         return parts.map((part, index) => {
             if (part.startsWith("**") && part.endsWith("**")) {
                 return <Text key={index} style={{ fontWeight: "bold", color: "#F1FAEE" }}>{part.slice(2, -2)}</Text>;
@@ -122,7 +122,7 @@ const HomeScreen = () => {
             return <Text key={index} style={{ color: "#F1FAEE" }}>{part}</Text>;
         });
     };
-    
+
 
     const addToFavourite = async () => {
         if (!drinkSuggestion || !drinkSuggestion.id) {
@@ -130,9 +130,9 @@ const HomeScreen = () => {
             console.error("Drink suggestion data:", drinkSuggestion);
             return;
         }
-    
+
         try {
-            const response = await fetch("http://10.0.2.2:5001/api/drinks/favourites", {
+            const response = await fetch("https://boozeai.onrender.com/api/drinks/favourites", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -140,7 +140,7 @@ const HomeScreen = () => {
                 },
                 body: JSON.stringify({ drinkId: drinkSuggestion.id }),
             });
-    
+
             const data = await response.json();
             if (response.ok) {
                 alert("Added to Favourites!");
@@ -152,8 +152,8 @@ const HomeScreen = () => {
             alert("Something went wrong!");
         }
     };
-    
-    
+
+
 
     return (
         <View style={styles.screen}>
@@ -222,25 +222,25 @@ const HomeScreen = () => {
 
                     {/* Modal for Drink Suggestion */}
                     <Modal visible={modalVisible} transparent={true} animationType="slide">
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalContainer}>
-                            <ScrollView contentContainerStyle={styles.modalScroll}>
-                                <Text style={styles.resultTitle}>{drinkSuggestion?.name || "Unknown Drink"}</Text>
-                                <Text style={styles.resultDescription}>{formatDescription(drinkSuggestion?.description)}</Text>
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.modalContainer}>
+                                <ScrollView contentContainerStyle={styles.modalScroll}>
+                                    <Text style={styles.resultTitle}>{drinkSuggestion?.name || "Unknown Drink"}</Text>
+                                    <Text style={styles.resultDescription}>{formatDescription(drinkSuggestion?.description)}</Text>
 
-                                <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.favButton} onPress={addToFavourite}>
-            <Text style={styles.favButtonText}>❤️ Add to Favourite</Text>
-          </TouchableOpacity>
+                                    <View style={styles.buttonContainer}>
+                                        <TouchableOpacity style={styles.favButton} onPress={addToFavourite}>
+                                            <Text style={styles.favButtonText}>❤️ Add to Favourite</Text>
+                                        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-                            </ScrollView>
+                                        <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                                            <Text style={styles.closeButtonText}>Close</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </ScrollView>
+                            </View>
                         </View>
-                    </View>
-                </Modal>
+                    </Modal>
 
                 </View>
             </ScrollView>
@@ -257,6 +257,7 @@ const styles = StyleSheet.create({
 
     pickerContainer: {
         width: "80%",
+        height: 60,
         borderWidth: 1,
         borderColor: "#500073",
         borderRadius: 10,
@@ -264,7 +265,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         overflow: "hidden",
     },
-    picker: { height: 50, width: "100%", color: "#F14A00" },
+    picker: { height: 60, width: "100%", color: "#F14A00" },
 
     ingredientInputContainer: { flexDirection: "row", alignItems: "center", width: "80%" },
 
@@ -276,6 +277,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         color: "#F14A00",
         backgroundColor: "#2A004E",
+        height: 60
     },
 
     addButton: {
@@ -342,7 +344,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 3 },
         shadowRadius: 5,
         elevation: 5,
-        justifyContent: "center", 
+        justifyContent: "center",
         alignItems: "center",
     },
     modalScroll: {

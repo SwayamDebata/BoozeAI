@@ -98,7 +98,7 @@ export default function App() {
           headerTintColor: "#F4A261", // Back Button Color (Warm Orange)
         }}
       >
-        <Stack.Screen name="Auth" component={AuthScreen} />
+        <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>

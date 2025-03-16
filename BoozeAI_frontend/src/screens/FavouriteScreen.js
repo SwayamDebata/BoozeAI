@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { 
-  View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet 
+  View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, RefreshControl 
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -9,29 +9,33 @@ const FavouriteScreen = () => {
   const [token, setToken] = useState(null);
   const [favourites, setFavourites] = useState([]); 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
-    const fetchTokenAndFavourites = async () => {
-      try {
-        const storedToken = await AsyncStorage.getItem("token");
-        if (!storedToken) {
-          console.warn("⚠️ Token is missing!");
-        } else {
-          setToken(storedToken);
-          fetchFavourites(storedToken);
-        }
-      } catch (error) {
-        console.error("❌ Error retrieving token:", error);
-      }
-    };
-
     fetchTokenAndFavourites();
   }, []);
 
+  const fetchTokenAndFavourites = async () => {
+    try {
+      setLoading(true);
+      const storedToken = await AsyncStorage.getItem("token");
+      if (!storedToken) {
+        console.warn("⚠️ Token is missing!");
+      } else {
+        setToken(storedToken);
+        await fetchFavourites(storedToken);
+      }
+    } catch (error) {
+      console.error("❌ Error retrieving token:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchFavourites = async (authToken) => {
     try {
-      const response = await axios.get("http://10.0.2.2:5001/api/drinks/favourites", {
+      const response = await axios.get("https://boozeai.onrender.com/api/drinks/favourites", {
         headers: { Authorization: `Bearer ${authToken}` },
       });
       if (response.data.favourites) {
@@ -39,10 +43,15 @@ const FavouriteScreen = () => {
       }
     } catch (error) {
       console.error("❌ Error fetching favourites:", error);
-    } finally {
-      setLoading(false);
     }
   };
+
+  // Pull-to-refresh handler
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchFavourites(token);
+    setRefreshing(false);
+  }, [token]);
 
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);
@@ -50,14 +59,8 @@ const FavouriteScreen = () => {
 
   const extractCocktailName = (suggestion) => {
     const match = suggestion.match(/Cocktail Name:\s*(.+)/i);
-  if (match && match[1]) {
-    return match[1].trim();
-  }
-  
-    return "UNKNOWN COCKTAIL";
+    return match && match[1] ? match[1].trim() : "UNKNOWN COCKTAIL";
   };
-  
-  
 
   const formatSuggestion = (text) => {
     return text.replace(/\*\*(.*?)\*\*/g, (_, match) => `\n${match.toUpperCase()}`);
@@ -82,6 +85,9 @@ const FavouriteScreen = () => {
         <FlatList
           data={favourites}
           keyExtractor={(item) => item._id.toString()}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
           renderItem={({ item }) => {
             const cocktailName = extractCocktailName(item.suggestion);
             const isExpanded = expandedId === item._id;

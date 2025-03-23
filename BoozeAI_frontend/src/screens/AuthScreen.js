@@ -76,7 +76,6 @@ const AuthScreen = ({ navigation }) => {
       navigation.replace("AuthScreen");
     } catch (error) {
       console.error("Manual Logout Error:", error);
-      Alert.alert("Logout Failed", error.message || "An unexpected error occurred.");
     }
   };
   

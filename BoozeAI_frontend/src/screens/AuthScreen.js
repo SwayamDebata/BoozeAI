@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Button, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import auth from "@react-native-firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {jwtDecode} from "jwt-decode"; 
+import { jwtDecode } from "jwt-decode";
+import LottieView from "lottie-react-native";
 
 const AuthScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
@@ -14,35 +15,31 @@ const AuthScreen = ({ navigation }) => {
       offlineAccess: true,
       forceCodeForRefreshToken: true,
     });
-  
-    let isNavigated = false; // 🔹 Prevent duplicate navigation
-  
+
+    let isNavigated = false;
+
     const checkUser = async () => {
       try {
         setLoading(true);
         const token = await AsyncStorage.getItem("token");
-  
+
         if (!token) {
           console.log("No token found. Redirecting to login.");
           setLoading(false);
           return;
         }
-  
-        // 🔹 Decode token and check expiry
+
         const decodedToken = jwtDecode(token);
         const currentTime = Math.floor(Date.now() / 1000);
-  
+
         if (decodedToken.exp < currentTime) {
-          console.log("Token expired. Logging out...");
           await handleLogout();
           return;
         }
-  
-        // 🔹 Listen for Firebase Auth State Change
+
         const unsubscribe = auth().onAuthStateChanged(async (user) => {
           if (user && !isNavigated) {
-            console.log("User is logged in:", user.email);
-            isNavigated = true; // ✅ Prevent duplicate navigation
+            isNavigated = true;
             navigation.replace("MainTabs");
           } else if (!user) {
             console.log("No Firebase user. Logging out...");
@@ -50,34 +47,32 @@ const AuthScreen = ({ navigation }) => {
           }
           setLoading(false);
         });
-  
+
         return () => unsubscribe();
       } catch (error) {
         console.error("Error restoring session:", error);
         setLoading(false);
       }
     };
-  
+
     checkUser();
   }, []);
-  
 
   const handleLogout = async () => {
     try {
-      // Remove stored JWT token
       await AsyncStorage.removeItem("token");
   
-      // Sign out from Firebase Auth
-      await auth().signOut();
-  
-      // Check if the user is signed in before calling revokeAccess
-      const isSignedIn = await GoogleSignin.isSignedIn();
-      if (isSignedIn) {
-        await GoogleSignin.signOut(); // ✅ Sign out first
-        await GoogleSignin.revokeAccess(); // ✅ Revoke Google access last
+      const currentUser = auth().currentUser;
+      if (currentUser) {
+        await auth().signOut();
       }
   
-      // Navigate to login screen
+      const isSignedIn = await GoogleSignin.isSignedIn();
+      if (isSignedIn) {
+        await GoogleSignin.signOut();
+        await GoogleSignin.revokeAccess();
+      }
+  
       navigation.replace("AuthScreen");
     } catch (error) {
       console.error("Manual Logout Error:", error);
@@ -110,11 +105,7 @@ const AuthScreen = ({ navigation }) => {
         throw new Error(data.message || "Authentication failed");
       }
 
-      // 🔹 Store JWT token
       await AsyncStorage.setItem("token", data.token);
-      console.log("Token stored successfully!");
-
-      // 🔹 Navigate to HomeScreen
       navigation.replace("MainTabs");
     } catch (error) {
       console.error("Google Sign-In Error:", error);
@@ -124,8 +115,13 @@ const AuthScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#ffcc00" />
+      <View style={styles.loaderContainer}>
+        <LottieView
+          source={require("../../assets/loading1.json")}
+          autoPlay
+          loop
+          style={styles.lottie}
+        />
         <Text style={styles.loadingText}>Checking authentication...</Text>
       </View>
     );
@@ -133,19 +129,41 @@ const AuthScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <LottieView
+        source={require("../../assets/loading1.json")}
+        autoPlay
+        loop
+        style={styles.lottieWelcome}
+      />
       <Text style={styles.title}>Welcome to BoozeAI!</Text>
       <Text style={styles.subtitle}>Your AI-powered bartender 🍹</Text>
-      <Button title="Sign in with Google" onPress={signInWithGoogle} />
+
+      <TouchableOpacity style={styles.googleButton} onPress={signInWithGoogle}>
+        <Text style={styles.googleButtonText}>Sign in with Google</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: '#6c34cf' },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 10 },
-  subtitle: { fontSize: 16, marginBottom: 20 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: { marginTop: 10, fontSize: 16, color: "#bbb" },
+  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1C1C3A" },
+  title: { fontSize: 26, fontWeight: "bold", color: "#F8E71C", marginTop: 20 },
+  subtitle: { fontSize: 16, color: "#C5CAE9", marginBottom: 20, textAlign: "center", paddingHorizontal: 20 },
+  
+  loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1C1C3A" },
+  lottie: { width: 140, height: 140 },
+  loadingText: { marginTop: 15, fontSize: 16, fontWeight: "bold", color: "#C5CAE9" },
+
+  lottieWelcome: { width: 180, height: 180, marginBottom: 10 },
+
+  googleButton: {
+    backgroundColor: "#FFD700",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  googleButtonText: { fontSize: 16, fontWeight: "bold", color: "#1C1C3A" },
 });
 
 export default AuthScreen;

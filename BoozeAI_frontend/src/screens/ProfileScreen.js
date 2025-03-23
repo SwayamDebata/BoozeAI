@@ -6,12 +6,13 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
-
+import LottieView from "lottie-react-native";
 
 const ProfileScreen = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigation = useNavigation();
+
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -36,78 +37,75 @@ const ProfileScreen = () => {
                 }
 
                 const data = await response.json();
-                console.log("Profile Data:", data);
-                setUser(data); // ✅ Update user state
+                setUser(data);
             } catch (error) {
                 console.error("Error fetching profile:", error);
             } finally {
-                setLoading(false); // ✅ Ensure loading is set to false in all cases
+                setLoading(false);
             }
         };
 
         fetchProfile();
-    }, [navigation]); // ✅ Dependency added to avoid issues
+    }, [navigation]);
 
     if (loading) {
         return (
             <View style={styles.loaderContainer}>
-                <ActivityIndicator size="large" color="#E63946" />
+                <View style={styles.lottieWrapper}>
+                    <LottieView
+                        source={require("../../assets/loading1.json")}
+                        autoPlay
+                        loop
+                        style={styles.lottieAnimation}
+                    />
+                </View>
+                <Text style={styles.loadingText}>Loading your profile...</Text>
             </View>
         );
     }
+    
 
     if (!user) {
         return (
             <View style={styles.container}>
-                <Text style={{ color: "white", fontSize: 18 }}>User data not found</Text>
+                <Text style={styles.noUserText}>User data not found</Text>
             </View>
         );
     }
 
     const handleLogout = async () => {
         try {
-            await AsyncStorage.removeItem("token"); // 🔹 Remove stored JWT token
-            await GoogleSignin.revokeAccess(); // 🔹 Revoke Google access (optional)
-            await GoogleSignin.signOut(); // 🔹 Sign out from Google
-            await auth().signOut(); // 🔹 Sign out from Firebase Auth
-
-            navigation.replace("Auth"); // 🔹 Navigate to login screen
+            await AsyncStorage.removeItem("token");
+            await GoogleSignin.revokeAccess();
+            await GoogleSignin.signOut();
+            await auth().signOut();
+            navigation.replace("Auth");
         } catch (error) {
             console.error("Logout Error:", error);
             Alert.alert("Logout Failed", "Something went wrong while logging out.");
         }
     };
 
-
     return (
         <View style={styles.container}>
-            {/* Profile Picture */}
-            <Image
-                source={user.avatar ? { uri: user.avatar } : require("../../assets/man.png")}
-                style={styles.avatar}
-            />
+            <View style={styles.profileCard}>
+                <Image
+                    source={user.avatar ? { uri: user.avatar } : require("../../assets/man.png")}
+                    style={styles.avatar}
+                />
+                <Text style={styles.name}>{user.name}</Text>
+                <Text style={styles.email}>{user.email}</Text>
+            </View>
 
-            {/* User Info */}
-            <Text style={styles.name}>{user.name}</Text>
-            <Text style={styles.email}>{user.email}</Text>
+            <View style={styles.infoContainer}>
+                <Text style={styles.infoTitle}>Your Boozy Journey:</Text>
+                <Text style={styles.infoText}>Sipping and savoring since who knows when!</Text>
+            </View>
 
-            {/* History Button */}
-            <TouchableOpacity
-                style={styles.historyButton}
-                onPress={() => navigation.navigate("HistoryScreen")}
-            >
-                <Text style={styles.historyButtonText}>View History</Text>
-            </TouchableOpacity>
-
-            {/* 🔹 Logout Button */}
-            <TouchableOpacity
-                style={styles.logoutButton}
-                onPress={handleLogout}
-            >
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                 <Text style={styles.logoutButtonText}>Logout</Text>
             </TouchableOpacity>
         </View>
-
     );
 };
 
@@ -118,13 +116,16 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#121212",
+        backgroundColor: "#1C1C3A",
         padding: 20,
     },
-    loaderContainer: {
-        flex: 1,
-        justifyContent: "center",
+    profileCard: {
         alignItems: "center",
+        backgroundColor: "#3A2E6E",
+        padding: 20,
+        borderRadius: 12,
+        width: "100%",
+        marginBottom: 20,
     },
     avatar: {
         width: 100,
@@ -132,41 +133,78 @@ const styles = StyleSheet.create({
         borderRadius: 50,
         marginBottom: 15,
         borderWidth: 2,
-        borderColor: "#F1FAEE",
+        borderColor: "#D1C4E9",
     },
     name: {
         fontSize: 22,
         fontWeight: "bold",
-        color: "#F1FAEE",
+        color: "#EDE7F6",
         marginBottom: 5,
     },
     email: {
         fontSize: 16,
-        color: "#A8DADC",
+        color: "#C5CAE9",
+        marginBottom: 15,
+    },
+    infoContainer: {
+        backgroundColor: "#2A1E5C",
+        padding: 15,
+        borderRadius: 10,
+        width: "100%",
         marginBottom: 20,
     },
-    historyButton: {
-        backgroundColor: "#E63946",
-        paddingVertical: 12,
-        paddingHorizontal: 25,
-        borderRadius: 8,
-    },
-    historyButtonText: {
-        color: "#FFFFFF",
+    infoTitle: {
         fontSize: 16,
         fontWeight: "bold",
+        color: "#EDE7F6",
+    },
+    infoText: {
+        fontSize: 14,
+        color: "#C5CAE9",
+        marginBottom: 8,
     },
     logoutButton: {
-        backgroundColor: "#D90429",
+        backgroundColor: "#5D3FD3",
         paddingVertical: 12,
         paddingHorizontal: 25,
         borderRadius: 8,
-        marginTop: 20, // 🔹 Space between buttons
+        alignItems: "center",
+        width: "100%",
     },
     logoutButtonText: {
         color: "#FFFFFF",
         fontSize: 16,
         fontWeight: "bold",
     },
-    
+    noUserText: {
+        color: "#C5CAE9",
+        fontSize: 18,
+    },
+    loaderContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#1C1C3A", // Keep it consistent with the theme
+    },
+    lottieWrapper: {
+        width: 120, 
+        height: 120,
+        borderRadius: 60, // Circular border
+        overflow: "hidden",
+        backgroundColor: "rgba(28, 28, 58, 0.6)", // Subtle transparency
+        borderWidth: 3,  
+        borderColor: "#D1C4E9", // Light lavender border to match theme
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    lottieAnimation: {
+        width: "100%",
+        height: "100%",
+    },
+    loadingText: {
+        marginTop: 15,
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#C5CAE9",
+    },
 });

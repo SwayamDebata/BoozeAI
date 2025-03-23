@@ -10,7 +10,6 @@ export const AuthProvider = ({ children }) => {
     const loadToken = async () => {
       try {
         const storedToken = await AsyncStorage.getItem("userToken");
-        console.log("Loaded Token from Storage:", storedToken); // ✅ Debugging
         if (storedToken) {
           setToken(storedToken);
         }
@@ -24,7 +23,6 @@ export const AuthProvider = ({ children }) => {
 
   const saveToken = async (newToken) => {
     try {
-      console.log("Saving Token:", newToken); // ✅ Debugging
       await AsyncStorage.setItem("userToken", newToken);
       setToken(newToken);
     } catch (error) {

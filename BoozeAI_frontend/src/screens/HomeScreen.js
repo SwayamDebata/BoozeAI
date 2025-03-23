@@ -5,14 +5,15 @@ import {
 import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
+import LottieView from "lottie-react-native";
+
 
 const HomeScreen = () => {
     const navigation = useNavigation();
     const [mood, setMood] = useState("");
-    const [weather, setWeather] = useState("Sunny");
-    const [budget, setBudget] = useState("$");
+    const [weather, setWeather] = useState("");
+    const [budget, setBudget] = useState("");
     const [ingredients, setIngredients] = useState([]);
-    const [newIngredient, setNewIngredient] = useState("");
     const [instructions, setInstructions] = useState("");
     const [loading, setLoading] = useState(false);
     const [drinkSuggestion, setDrinkSuggestion] = useState(null);
@@ -41,50 +42,50 @@ const HomeScreen = () => {
 
     const getDrinkSuggestion = async () => {
         if (!token || typeof token !== "string") {
-            Alert.alert("Authentication Error", "User token is missing. Please log in again.");
             navigation.replace("AuthScreen");
             return;
         }
-
+    
         setLoading(true);
         setError(null);
         setDrinkSuggestion(null);
-
+    
         try {
+            const payload = {
+                mood,
+                weather,
+                budget,
+                ingredients, 
+                instructions,
+            };
+    
+    
             const response = await fetch(API_URL, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token.trim()}`,
                 },
-                body: JSON.stringify({
-                    mood,
-                    weather,
-                    budget,
-                    ingredients,
-                    instructions,
-                }),
+                body: JSON.stringify(payload),
             });
-
+    
             const data = await response.json();
-            console.log("API Response Data:", data);
-
+    
             if (response.ok) {
-                if (data && typeof data === "object" && data.suggestion && data.id) {  // Fix: Check 'id' instead of 'drinkId'
+                if (data && typeof data === "object" && data.suggestion && data.id) {
                     setDrinkSuggestion({
                         id: data.id,
                         name: "Suggested Drink",
-                        description: data.suggestion
+                        description: data.suggestion,
                     });
-                    setModalVisible(true); // Show modal on success
+                    setModalVisible(true);
                 } else {
                     setError("Unexpected response format.");
                     console.error("Unexpected API response:", data);
                 }
-            }
-            else if (response.status === 401) {
+            } else if (response.status === 401) {
                 Alert.alert("Session Expired", "Please log in again.");
-                await AsyncStorage.removeItem("token"); // Ensure the token is removed
+                await AsyncStorage.removeItem("token");
                 navigation.replace("AuthScreen");
             } else {
                 setError(data?.message || "Something went wrong.");
@@ -96,14 +97,10 @@ const HomeScreen = () => {
             setLoading(false);
         }
     };
+    
 
 
-    const addIngredient = () => {
-        if (newIngredient.trim()) {
-            setIngredients((prevIngredients) => [...prevIngredients, newIngredient.trim()]);
-            setNewIngredient("");
-        }
-    };
+   
     const formatDescription = (description) => {
         if (!description) return "";
 
@@ -158,255 +155,226 @@ const HomeScreen = () => {
     return (
         <View style={styles.screen}>
             <ScrollView contentContainerStyle={styles.container}>
-                <View style={styles.fullWidthContainer}>
+                <Text style={styles.title}>Find Your Perfect Drink</Text>
 
-                    <Text style={styles.label}>Select your mood:</Text>
-                    <View style={styles.pickerContainer}>
-                        <Picker selectedValue={mood} onValueChange={setMood} style={styles.picker}>
-                            {["😊 Happy", "😔 Stressed", "😌 Chill", "🎉 Party", "🥱 Tired"].map((option) => (
-                                <Picker.Item key={option} label={option} value={option} />
-                            ))}
-                        </Picker>
-                    </View>
+                <Text style={styles.label}>Mood</Text>
+                <View style={styles.buttonGroup}>
+                    {["Happy", "Stressed", "Chill", "Party", "Tired"].map(option => (
+                        <TouchableOpacity key={option} style={[styles.selectButton, mood === option && styles.selectedButton]} onPress={() => setMood(option)}>
+                            <Text style={styles.selectButtonText}>{option}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
 
-                    <Text style={styles.label}>Weather:</Text>
-                    <View style={styles.pickerContainer}>
-                        <Picker selectedValue={weather} onValueChange={setWeather} style={styles.picker}>
-                            {["Sunny", "Rainy", "Cold", "Warm"].map((option) => (
-                                <Picker.Item key={option} label={option} value={option} />
-                            ))}
-                        </Picker>
-                    </View>
+                <Text style={styles.label}>Weather</Text>
+                <View style={styles.buttonGroup}>
+                    {["Sunny", "Rainy", "Cold", "Warm"].map(option => (
+                        <TouchableOpacity key={option} style={[styles.selectButton, weather === option && styles.selectedButton]} onPress={() => setWeather(option)}>
+                            <Text style={styles.selectButtonText}>{option}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
 
-                    <Text style={styles.label}>Budget:</Text>
-                    <View style={styles.pickerContainer}>
-                        <Picker selectedValue={budget} onValueChange={setBudget} style={styles.picker}>
-                            {["₹200-500", "₹500-1000", "more"].map((option) => (
-                                <Picker.Item key={option} label={option} value={option} />
-                            ))}
-                        </Picker>
-                    </View>
+                <Text style={styles.label}>Budget</Text>
+                <View style={styles.buttonGroup}>
+                    {["₹200-500", "₹500-1000", "more"].map(option => (
+                        <TouchableOpacity key={option} style={[styles.selectButton, budget === option && styles.selectedButton]} onPress={() => setBudget(option)}>
+                            <Text style={styles.selectButtonText}>{option}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
 
-                    <Text style={styles.label}>Ingredients:</Text>
-                    <View style={styles.ingredientInputContainer}>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Add an ingredient..."
-                            placeholderTextColor="#F14A00"
-                            value={newIngredient}
-                            onChangeText={setNewIngredient}
+                <Text style={styles.label}>Ingredients</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Add an ingredient"
+                        placeholderTextColor="#bbb"
+                        value={ingredients}
+                        onChangeText={setIngredients}
+                    />
+                
+                
+
+                <Text style={styles.label}>Instructions</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="How should it be prepared?"
+                    placeholderTextColor="#bbb"
+                    value={instructions}
+                    onChangeText={setInstructions}
+                    multiline
+                />
+
+                <TouchableOpacity style={styles.button} onPress={getDrinkSuggestion} disabled={loading}>
+                    <Text style={styles.buttonText}>{loading ? "Fetching..." : "Get Drink Suggestion"}</Text>
+                </TouchableOpacity>
+                {loading && (
+                    <View style={styles.lottieContainer}>
+                        <LottieView
+                            source={require("../../assets/loading1.json")}
+                            autoPlay
+                            loop
+                            style={styles.lottie}
                         />
                     </View>
-                    {ingredients.map((ing, index) => (
-                        <Text key={index} style={styles.ingredient}>{ing}</Text>
-                    ))}
+                )}
 
-                    <Text style={styles.label}>Instructions:</Text>
-                    <TextInput
-                        style={styles.textArea}
-                        placeholder="How do you want it prepared?"
-                        placeholderTextColor="#F14A00"
-                        value={instructions}
-                        onChangeText={setInstructions}
-                        multiline
-                    />
+                {/* Modal for Drink Suggestion */}
+                <Modal visible={modalVisible} transparent={true} animationType="slide">
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContainer}>
+                            <ScrollView contentContainerStyle={styles.modalScroll}>
+                                <Text style={styles.resultTitle}>{drinkSuggestion?.name || "Unknown Drink"}</Text>
+                                <Text style={styles.resultDescription}>{formatDescription(drinkSuggestion?.description)}</Text>
 
-                    <TouchableOpacity style={styles.button} onPress={getDrinkSuggestion} disabled={loading}>
-                        <Text style={styles.buttonText}>
-                            {loading ? "Fetching..." : "Get AI Drink Suggestion 🍸"}
-                        </Text>
-                    </TouchableOpacity>
+                                <View style={styles.buttonContainer}>
+                                    <TouchableOpacity style={styles.favButton} onPress={addToFavourite}>
+                                        <Text style={styles.favButtonText}>❤️ Add to Favourite</Text>
+                                    </TouchableOpacity>
 
-                    {loading && <ActivityIndicator size="large" color="#008080" style={{ marginTop: 10 }} />}
-                    {error && <Text style={styles.error}>{error}</Text>}
-
-                    {/* Modal for Drink Suggestion */}
-                    <Modal visible={modalVisible} transparent={true} animationType="slide">
-                        <View style={styles.modalOverlay}>
-                            <View style={styles.modalContainer}>
-                                <ScrollView contentContainerStyle={styles.modalScroll}>
-                                    <Text style={styles.resultTitle}>{drinkSuggestion?.name || "Unknown Drink"}</Text>
-                                    <Text style={styles.resultDescription}>{formatDescription(drinkSuggestion?.description)}</Text>
-
-                                    <View style={styles.buttonContainer}>
-                                        <TouchableOpacity style={styles.favButton} onPress={addToFavourite}>
-                                            <Text style={styles.favButtonText}>❤️ Add to Favourite</Text>
-                                        </TouchableOpacity>
-
-                                        <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                                            <Text style={styles.closeButtonText}>Close</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </ScrollView>
-                            </View>
+                                    <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                                        <Text style={styles.closeButtonText}>Close</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </ScrollView>
                         </View>
-                    </Modal>
-
-                </View>
+                    </View>
+                </Modal>
             </ScrollView>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: "#121212" },
-
-    container: { padding: 20, alignItems: "center", backgroundColor: "#121212" },
-
-    label: { fontSize: 16, fontWeight: "bold", marginVertical: 10, color: "#F14A00" },
-
-    pickerContainer: {
-        width: "80%",
-        height: 60,
-        borderWidth: 1,
-        borderColor: "#500073",
-        borderRadius: 10,
-        backgroundColor: "#2A004E",
-        marginBottom: 10,
-        overflow: "hidden",
+    screen: { flex: 1, backgroundColor: "#1C1C3A", padding: 20 },
+    container: { alignItems: "center" },
+    title: { fontSize: 24, fontWeight: "bold", color: "#D1C4E9", marginBottom: 20 },
+    label: { fontSize: 16, fontWeight: "500", color: "#C5CAE9", marginBottom: 8 },
+    buttonGroup: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginBottom: 15 },
+    selectButton: {
+        backgroundColor: "#3A2E6E",
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        margin: 5,
     },
-    picker: { height: 60, width: "100%", color: "#F14A00" },
-
-    ingredientInputContainer: { flexDirection: "row", alignItems: "center", width: "80%" },
-
+    selectedButton: { backgroundColor: "#5D3FD3" },
+    selectButtonText: { color: "#EDE7F6", fontSize: 16 },
     input: {
-        flex: 1,
-        borderWidth: 1,
-        borderColor: "#500073",
-        padding: 10,
-        borderRadius: 8,
-        color: "#F14A00",
-        backgroundColor: "#2A004E",
-        height: 60
-    },
-
-    addButton: {
-        marginLeft: 10,
-        padding: 10,
-        backgroundColor: "#F14A00",
-        borderRadius: 8,
-    },
-    addButtonText: { color: "#FFFFFF", fontSize: 18, fontWeight: "bold" },
-
-    textArea: {
-        width: "80%",
-        borderWidth: 1,
-        borderColor: "#500073",
-        padding: 10,
-        borderRadius: 8,
-        minHeight: 60,
-        textAlignVertical: "top",
-        color: "#F14A00",
-        backgroundColor: "#2A004E",
-    },
-
-    button: {
-        marginTop: 20,
-        backgroundColor: "#500073",
+        width: "100%",
+        backgroundColor: "#3A2E6E",
+        color: "#EDE7F6",
         padding: 12,
         borderRadius: 8,
+        marginBottom: 10,
+    },
+    inputRow: {
+        flexDirection: "row",
         alignItems: "center",
-        width: "80%",
-    },
-    buttonContainer: {
-        flexDirection: "column",  // Stack buttons vertically
-        alignItems: "center",     // Center horizontally
-        justifyContent: "center", // Center vertically
-        marginTop: 20,
-        gap: 2,  // Space between buttons
-    },
-    buttonText: { color: "#F14A00", fontWeight: "bold", fontSize: 16 },
-
-    error: { color: "#E63946", marginTop: 10 },
-
-    fullWidthContainer: {
-        flex: 1,
         width: "100%",
-        backgroundColor: "#121212",
-        alignItems: "center",
-        paddingBottom: 20,
+        marginBottom: 10,
     },
-
+    addButton: {
+        backgroundColor: "#5D3FD3",
+        padding: 12,
+        borderRadius: 8,
+        marginLeft: 10,
+    },
+    addButtonText: { fontSize: 18, fontWeight: "bold", color: "#FFFFFF" },
+    button: {
+        backgroundColor: "#5D3FD3",
+        paddingVertical: 14,
+        borderRadius: 8,
+        alignItems: "center",
+        width: "100%",
+        marginTop: 20,
+    },
+    buttonText: { fontSize: 16, fontWeight: "bold", color: "#FFFFFF" },
+    ingredient: { color: "#EDE7F6", marginBottom: 5, fontSize: 14 },
     modalOverlay: {
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.6)",
+        backgroundColor: "rgba(0, 0, 0, 0.6)",
         justifyContent: "center",
         alignItems: "center",
     },
     modalContainer: {
-        width: "85%",
-        maxHeight: "80%",
-        backgroundColor: "#1e1e1e",
-        borderRadius: 12,
+        backgroundColor: "#3A2E6E",
         padding: 20,
-        shadowColor: "#000",
-        shadowOpacity: 0.3,
-        shadowOffset: { width: 0, height: 3 },
-        shadowRadius: 5,
-        elevation: 5,
-        justifyContent: "center",
+        borderRadius: 10,
+        width: "85%",
         alignItems: "center",
+        maxHeight: 700,
+        width: 380
     },
     modalScroll: {
-        paddingBottom: 20,
+        width: "100%",
+        alignItems: "center",
     },
     resultTitle: {
         fontSize: 22,
         fontWeight: "bold",
-        color: "#ffcc00",
-        textAlign: "center",
+        color: "#D1C4E9",
         marginBottom: 10,
     },
     resultDescription: {
         fontSize: 16,
-        color: "#ddd",
-        marginBottom: 20,
+        color: "#C5CAE9",
         textAlign: "center",
+        marginBottom: 20,
+    },
+    buttonContainer: {
+        flexDirection: "row",
+        gap: 10,
     },
     favButton: {
-        backgroundColor: "#ffcc00",
-        paddingVertical: 12,
+        backgroundColor: "#5D3FD3",
+        padding: 12,
         borderRadius: 8,
-        alignItems: "center",
-        marginVertical: 10,
-        shadowColor: "#ffcc00",
-        shadowOpacity: 0.4,
-        shadowOffset: { width: 0, height: 3 },
-        shadowRadius: 5,
-        elevation: 5,
-        width: "80%",
     },
     favButtonText: {
-        fontSize: 16,
-        fontWeight: "bold",
-        color: "#222",
+        color: "#FFFFFF",
     },
     closeButton: {
-        backgroundColor: "#E63946",
-        paddingVertical: 10,
+        backgroundColor: "#3A2E6E",
+        padding: 12,
         borderRadius: 8,
-        alignItems: "center",
-        marginTop: 10,
-        width: "80%",
     },
     closeButtonText: {
-        fontSize: 16,
-        fontWeight: "bold",
-        color: "#fff",
+        color: "#EDE7F6",
     },
 
-    drinkCard: {
-        backgroundColor: "#1E1E1E",
-        padding: 15,
-        borderRadius: 10,
-        marginBottom: 10,
-        borderWidth: 2,
-        borderColor: "transparent",
+    lottieContainer: {
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: [{ translateX: -100 }, { translateY: -100 }],
+        zIndex: 1000,
+        backgroundColor: "rgba(28, 28, 58, 0.6)",
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        justifyContent: "center",
+        alignItems: "center",
+        overflow: "hidden",
+        borderWidth: 4,
+        borderColor: "#D1C4E9",
+        shadowColor: "#A8DADC",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.8,
+        shadowRadius: 8,
     },
-    selectedDrinkCard: {
-        borderColor: "#F4A261",
+
+
+    lottie: {
+        width: 200,
+        height: 200,
     },
+
+
+
+
 });
+
 
 
 

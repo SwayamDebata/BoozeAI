@@ -8,7 +8,6 @@ import HomeScreen from "./src/screens/HomeScreen";
 import FavouriteScreen from "./src/screens/FavouriteScreen";
 import NearbyScreen from "./src/screens/NearbyScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
-import { AuthProvider } from "./src/context/AuthContext"; // ✅ Make sure the path is correct
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -22,9 +21,9 @@ function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: "#E63946", // Neon Red (Active Tab)
-        tabBarInactiveTintColor: "#A8DADC", // Muted Cyan (Inactive Tab)
-        tabBarStyle: { backgroundColor: "#1A1A1A", height: 60 }, // Dark Background
+        tabBarActiveTintColor: "#fff", // Neon Red (Active Tab)
+        tabBarInactiveTintColor: "#A8A8A8", // Muted Cyan (Inactive Tab)
+        tabBarStyle: { backgroundColor: "#1C1C3A", height: 60 }, // Dark Background
       }}
     >
       <Tab.Screen
@@ -34,11 +33,11 @@ function MainTabs() {
           tabBarIcon: ({ focused }) => (
             <Image
               source={homeIcon}
-              style={{ width: 24, height: 24, tintColor: focused ? "#F4A261" : "#B0B0B0" }} // Warm Orange (Active), Muted Gray (Inactive)
+              style={{ width: 24, height: 24, tintColor: focused ? "#8e44ad" : "#B0B0B0" }} // Warm Orange (Active), Muted Gray (Inactive)
             />
           ),
-          headerStyle: { backgroundColor: "#1A1A1A" }, // Header Background
-          headerTitleStyle: { color: "#F1FAEE" }, // Soft White Text
+          headerStyle: { backgroundColor: "#1C1C3A" }, // Header Background
+          headerTitleStyle: { color: "#fff" }, // Soft White Text
         }}
       />
       <Tab.Screen
@@ -48,11 +47,11 @@ function MainTabs() {
           tabBarIcon: ({ focused }) => (
             <Image
               source={favouriteIcon}
-              style={{ width: 24, height: 24, tintColor: focused ? "#F4A261" : "#B0B0B0" }}
+              style={{ width: 24, height: 24, tintColor: focused ? "#8e44ad" : "#B0B0B0" }}
             />
           ),
-          headerStyle: { backgroundColor: "#1A1A1A" },
-          headerTitleStyle: { color: "#F1FAEE" },
+          headerStyle: { backgroundColor: "#1C1C3A" },
+          headerTitleStyle: { color: "#fff" },
         }}
       />
       <Tab.Screen
@@ -62,11 +61,11 @@ function MainTabs() {
           tabBarIcon: ({ focused }) => (
             <Image
               source={nearbyIcon}
-              style={{ width: 24, height: 24, tintColor: focused ? "#F4A261" : "#B0B0B0" }}
+              style={{ width: 24, height: 24, tintColor: focused ? "#8e44ad" : "#B0B0B0" }}
             />
           ),
-          headerStyle: { backgroundColor: "#1A1A1A" },
-          headerTitleStyle: { color: "#F1FAEE" },
+          headerStyle: { backgroundColor: "#1C1C3A" },
+          headerTitleStyle: { color: "#fff" },
         }}
       />
       <Tab.Screen
@@ -76,11 +75,11 @@ function MainTabs() {
           tabBarIcon: ({ focused }) => (
             <Image
               source={profileIcon}
-              style={{ width: 24, height: 24, tintColor: focused ? "#F4A261" : "#B0B0B0" }}
+              style={{ width: 24, height: 24, tintColor: focused ? "#8e44ad" : "#B0B0B0" }}
             />
           ),
-          headerStyle: { backgroundColor: "#1A1A1A" },
-          headerTitleStyle: { color: "#F1FAEE" },
+          headerStyle: { backgroundColor: "#1C1C3A" },
+          headerTitleStyle: { color: "#fff" },
         }}
       />
     </Tab.Navigator>
@@ -93,9 +92,9 @@ export default function App() {
       <Stack.Navigator
         initialRouteName="Auth"
         screenOptions={{
-          headerStyle: { backgroundColor: "#1A1A1A" }, // Header Bar Background
-          headerTitleStyle: { color: "#F1FAEE" }, // Header Title Color (Soft White)
-          headerTintColor: "#F4A261", // Back Button Color (Warm Orange)
+          headerStyle: { backgroundColor: "#1C1C3A" }, // Header Bar Background
+          headerTitleStyle: { color: "#fff" }, // Header Title Color (Soft White)
+          headerTintColor: "#8e44ad", // Back Button Color (Warm Orange)
         }}
       >
         <Stack.Screen name="Auth" component={AuthScreen} options={{ headerShown: false }}/>

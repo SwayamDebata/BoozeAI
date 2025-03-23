@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { 
-  View, Text, FlatList, Linking, ActivityIndicator, 
-  StyleSheet, PermissionsAndroid, Platform, TouchableOpacity, Alert 
+import {
+  View, Text, FlatList, Linking, ActivityIndicator,
+  StyleSheet, PermissionsAndroid, Platform, TouchableOpacity, Alert
 } from "react-native";
 import axios from "axios";
 import Geolocation from "react-native-geolocation-service";
+import LottieView from "lottie-react-native";
+
+const FOURSQUARE_API_KEY = "fsq3EenX8Pa+QekkeDvCdyKQRi6sOfA4lfqvWGarDoTBpUs=";
+const FOURSQUARE_URL = "https://api.foursquare.com/v3/places/search";
 
 const NearbyScreen = () => {
   const [shops, setShops] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     requestLocationPermission();
@@ -30,7 +35,6 @@ const NearbyScreen = () => {
 
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
           Alert.alert("Permission Denied", "Location access is needed to find nearby liquor stores.");
-          console.log("Location permission denied");
           return;
         }
       } catch (err) {
@@ -40,12 +44,12 @@ const NearbyScreen = () => {
 
     Geolocation.getCurrentPosition(
       (position) => {
-        console.log("User Location:", position.coords);
         fetchLiquorStores(position.coords.latitude, position.coords.longitude);
       },
       (error) => {
         console.error("Error fetching location:", error);
-        Alert.alert("Location Error", "Unable to retrieve location. Please enable GPS.");
+        setError("Unable to retrieve location. Please enable GPS and try again.");
+        setLoading(false);
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
     );
@@ -53,26 +57,21 @@ const NearbyScreen = () => {
 
   const fetchLiquorStores = async (latitude, longitude) => {
     try {
-      console.log(`Fetching stores at: ${latitude}, ${longitude}`);
-      const response = await axios.get(
-        "https://nominatim.openstreetmap.org/search",
-        {
-          params: {
-            q: "bar",
-            format: "json",
-            limit: 10,
-            lat: latitude,
-            lon: longitude,
-          },
-        }
-      );
-      console.log("API Response:", response.data);
-      if (response.data.length === 0) {
-        console.log("No stores found");
-      }
-      setShops(response.data);
+      const response = await axios.get(FOURSQUARE_URL, {
+        headers: {
+          Authorization: `fsq3EenX8Pa+QekkeDvCdyKQRi6sOfA4lfqvWGarDoTBpUs=`,
+        },
+        params: {
+          query: "liquor store",
+          ll: `${latitude},${longitude}`,
+          radius: 5000,
+          limit: 10,
+        },
+      });
+      setShops(response.data.results || []);
     } catch (error) {
       console.error("Error fetching liquor stores:", error);
+      setError("Failed to fetch nearby stores. Try again later.");
     } finally {
       setLoading(false);
     }
@@ -80,33 +79,47 @@ const NearbyScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#2A004E" />
-        <Text style={styles.loadingText}>Finding nearby liquor shops...</Text>
+      <View style={styles.loadingContainer}>
+        <View style={styles.lottieWrapper}>
+          <LottieView
+            source={require("../../assets/loading1.json")}
+            autoPlay
+            loop
+            style={styles.lottieAnimation}
+          />
+        </View>
+        <Text style={styles.loadingText}>Finding nearby liquor stores...</Text>
       </View>
     );
   }
 
+
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>🍸 Nearby Liquor Shops</Text>
-      <FlatList
-        data={shops}
-        keyExtractor={(item) => item.place_id || item.osm_id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.shopContainer}>
-            <Text style={styles.shopName}>{item.display_name}</Text>
-            <TouchableOpacity
-              style={styles.mapButton}
-              onPress={() =>
-                Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`)
-              }
-            >
-              <Text style={styles.mapButtonText}>📍 Open in Google Maps</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+      <Text style={styles.header}>🍸 Nearby Liquor Stores</Text>
+      {error ? (
+        <Text style={styles.errorText}>{error}</Text>
+      ) : (
+        <FlatList
+          data={shops}
+          keyExtractor={(item) => item.fsq_id?.toString() || Math.random().toString()}
+          renderItem={({ item }) => (
+            <View style={styles.shopContainer}>
+              <Text style={styles.shopName}>{item.name || "Unknown Store"}</Text>
+              {item.geocodes?.main?.latitude && item.geocodes?.main?.longitude ? (
+                <TouchableOpacity
+                  style={styles.mapButton}
+                  onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${item.geocodes.main.latitude},${item.geocodes.main.longitude}`)}
+                >
+                  <Text style={styles.mapButtonText}>📍 Open in Google Maps</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.errorText}>Location not available</Text>
+              )}
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 };
@@ -117,30 +130,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#1A1A1A", // Dark mode background
+    backgroundColor: "#1C1C3A", // Deep purple background
   },
   header: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#F1FAEE", // Soft white text
-    marginBottom: 15,
+    color: "#D1C4E9", // Soft lavender text
+    marginBottom: 20,
     textAlign: "center",
   },
   shopContainer: {
     padding: 15,
-    backgroundColor: "#2C2C2C", // Dark card background
+    backgroundColor: "#3A2E6E", // Darker purple card background
     marginBottom: 10,
-    borderRadius: 10,
+    borderRadius: 12,
   },
   shopName: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#F4A261", // Warm orange for shop names
+    color: "#EDE7F6", // Light lavender for shop names
     marginBottom: 5,
   },
   mapButton: {
-    backgroundColor: "#2A004E", // Deep Purple button
-    padding: 10,
+    backgroundColor: "#5D3FD3", // Rich purple button
+    padding: 12,
     borderRadius: 8,
     marginTop: 8,
     alignItems: "center",
@@ -150,9 +163,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1C1C3A", // Match theme background
+  },
+  lottieWrapper: {
+    width: 180,
+    height: 180,
+    borderRadius: 90, // Fully rounded
+    overflow: "hidden",
+    backgroundColor: "rgba(28, 28, 58, 0.6)", // Semi-transparent dark theme
+    borderWidth: 4,
+    borderColor: "#D1C4E9", // Soft lavender border
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  lottieAnimation: {
+    width: "100%",
+    height: "100%",
+  },
   loadingText: {
-    marginTop: 10,
+    color: "#EDE7F6",
     fontSize: 16,
-    color: "#bbb",
+    marginTop: 15,
+    fontWeight: "500",
+  },
+
+  errorText: {
+    color: "#FF5252", // Red for errors
+    textAlign: "center",
+    fontSize: 16,
   },
 });

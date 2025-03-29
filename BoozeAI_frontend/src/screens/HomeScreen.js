@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import {
-    View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert, Modal
+    View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Modal, Animated, FlatList
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import LottieView from "lottie-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
 const HomeScreen = () => {
@@ -13,15 +12,102 @@ const HomeScreen = () => {
     const [mood, setMood] = useState("");
     const [weather, setWeather] = useState("");
     const [budget, setBudget] = useState("");
-    const [ingredients, setIngredients] = useState([]);
-    const [instructions, setInstructions] = useState("");
+    const [selectedInstruction, setSelectedInstruction] = useState(null);
     const [loading, setLoading] = useState(false);
     const [drinkSuggestion, setDrinkSuggestion] = useState(null);
     const [error, setError] = useState(null);
     const [token, setToken] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [progress] = useState(new Animated.Value(0));
+    const [selectedIngredients, setSelectedIngredients] = useState([]);
 
     const API_URL = "https://boozeai.onrender.com/api/drinks/suggest";
+
+    const moods = [
+        { label: "Happy", animation: require("../../assets/happy.json") },
+        { label: "Stressed", animation: require("../../assets/stressed.json") },
+        { label: "Chill", animation: require("../../assets/chill.json") },
+        { label: "Party", animation: require("../../assets/party.json") },
+        { label: "Tired", animation: require("../../assets/tired.json") },
+    ];
+
+    const weatherOptions = [
+        { label: "Sunny", animation: require("../../assets/sunny.json") },
+        { label: "Rainy", animation: require("../../assets/rainy.json") },
+        { label: "Cold", animation: require("../../assets/cold.json") },
+        { label: "Warm", animation: require("../../assets/warm.json") },
+    ];
+    const budgets = ["₹200-400", "₹400-600", "₹600-1000", "more"];
+
+
+
+    const ingredientsList = [
+        { label: "Coke", animation: require("../../assets/coke.json") },
+        { label: "Lemon", animation: require("../../assets/lemon.json") },
+        { label: "Mint", animation: require("../../assets/mint.json") },
+        { label: "Soda", animation: require("../../assets/soda.json") },
+        { label: "Orange Juice", animation: require("../../assets/orange.json") },
+        { label: "Ginger Beer", animation: require("../../assets/ginger.json") },
+        { label: "Sugar Syrup", animation: require("../../assets/sugar.json") },
+        { label: "Tonic Water", animation: require("../../assets/water.json") },
+    ];
+
+    const instructionsList = [
+        { label: "Rum", animation: require("../../assets/rum.json") },
+        { label: "Whiskey", animation: require("../../assets/whiskey.json") },
+        { label: "Beer", animation: require("../../assets/beer.json") },
+        { label: "Vodka", animation: require("../../assets/vodka.json") },
+        { label: "Gin", animation: require("../../assets/gin.json") },
+        { label: "Tequila", animation: require("../../assets/tequila.json") },
+    ];
+
+
+    const toggleIngredient = (ingredient) => {
+        setSelectedIngredients((prev) =>
+            prev.includes(ingredient)
+                ? prev.filter((item) => item !== ingredient)
+                : [...prev, ingredient]
+        );
+    };
+    const toggleInstruction = (instruction) => {
+        setSelectedInstruction(instruction === selectedInstruction ? null : instruction);
+    };
+
+
+
+    const AnimatedCard = ({ item, selected, onPress }) => {
+        const scaleAnim = new Animated.Value(1);
+
+        const handlePressIn = () => {
+            Animated.timing(scaleAnim, {
+                toValue: 0.95,
+                duration: 150,
+                useNativeDriver: true,
+            }).start();
+        };
+
+        const handlePressOut = () => {
+            Animated.timing(scaleAnim, {
+                toValue: 1,
+                duration: 150,
+                useNativeDriver: true,
+            }).start(onPress);
+        };
+
+        return (
+            <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }], borderColor: selected ? "#FFD700" : "#444" }]}>
+                <TouchableOpacity
+                    onPressIn={handlePressIn}
+                    onPressOut={handlePressOut}
+                    style={styles.touchableArea}
+                >
+                    <LottieView source={item.animation} autoPlay loop style={styles.lottie} />
+                </TouchableOpacity>
+            </Animated.View>
+        );
+    };
+
+
 
     useEffect(() => {
         const fetchToken = async () => {
@@ -45,21 +131,21 @@ const HomeScreen = () => {
             navigation.replace("AuthScreen");
             return;
         }
-    
+
         setLoading(true);
         setError(null);
         setDrinkSuggestion(null);
-    
+
         try {
             const payload = {
                 mood,
                 weather,
                 budget,
-                ingredients, 
-                instructions,
+                ingredients: selectedIngredients.join(", "),
+                instruction: selectedInstruction,
             };
-    
-    
+
+            console.log("Sending Payload:", JSON.stringify(payload, null, 2));
             const response = await fetch(API_URL, {
                 method: "POST",
                 headers: {
@@ -68,9 +154,10 @@ const HomeScreen = () => {
                 },
                 body: JSON.stringify(payload),
             });
-    
+
             const data = await response.json();
-    
+
+
             if (response.ok) {
                 if (data && typeof data === "object" && data.suggestion && data.id) {
                     setDrinkSuggestion({
@@ -97,10 +184,17 @@ const HomeScreen = () => {
             setLoading(false);
         }
     };
-    
+
+    useEffect(() => {
+        Animated.timing(progress, {
+            toValue: budgets.indexOf(budget),
+            duration: 500,
+            useNativeDriver: false,
+        }).start();
+    }, [budget]);
 
 
-   
+
     const formatDescription = (description) => {
         if (!description) return "";
 
@@ -156,54 +250,86 @@ const HomeScreen = () => {
         <View style={styles.screen}>
             <ScrollView contentContainerStyle={styles.container}>
                 <Text style={styles.title}>Find Your Perfect Drink</Text>
-
                 <Text style={styles.label}>Mood</Text>
-                <View style={styles.buttonGroup}>
-                    {["Happy", "Stressed", "Chill", "Party", "Tired"].map(option => (
-                        <TouchableOpacity key={option} style={[styles.selectButton, mood === option && styles.selectedButton]} onPress={() => setMood(option)}>
-                            <Text style={styles.selectButtonText}>{option}</Text>
-                        </TouchableOpacity>
+                <View style={styles.cardContainer}>
+                    {moods.map((item) => (
+                        <AnimatedCard
+                            key={item.label}
+                            item={item}
+                            selected={mood === item.label}
+                            onPress={() => setMood(item.label)} 
+                        />
                     ))}
                 </View>
 
                 <Text style={styles.label}>Weather</Text>
-                <View style={styles.buttonGroup}>
-                    {["Sunny", "Rainy", "Cold", "Warm"].map(option => (
-                        <TouchableOpacity key={option} style={[styles.selectButton, weather === option && styles.selectedButton]} onPress={() => setWeather(option)}>
-                            <Text style={styles.selectButtonText}>{option}</Text>
-                        </TouchableOpacity>
+                <View style={styles.cardContainer}>
+                    {weatherOptions.map((item) => (
+                        <AnimatedCard
+                            key={item.label}
+                            item={item}
+                            selected={weather === item.label}
+                            onPress={() => setWeather(item.label)} 
+                        />
                     ))}
                 </View>
 
                 <Text style={styles.label}>Budget</Text>
-                <View style={styles.buttonGroup}>
-                    {["₹200-500", "₹500-1000", "more"].map(option => (
-                        <TouchableOpacity key={option} style={[styles.selectButton, budget === option && styles.selectedButton]} onPress={() => setBudget(option)}>
-                            <Text style={styles.selectButtonText}>{option}</Text>
+                <View style={styles.progressBarContainer}>
+                    <Animated.View style={[styles.progressBar, {
+                        width: progress.interpolate({
+                            inputRange: [0, budgets.length - 1],
+                            outputRange: ['0%', '100%'],
+                        })
+                    }]} />
+                </View>
+                <View style={styles.budgetOptions}>
+                    {budgets.map((option, index) => (
+                        <TouchableOpacity key={index} style={styles.budgetButton} onPress={() => setBudget(option)}>
+                            <View style={[styles.budgetIndicator, budget === option && styles.budgetSelected]} />
+                            <Text style={styles.budgetText}>{option}</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
 
                 <Text style={styles.label}>Ingredients</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Add an ingredient"
-                        placeholderTextColor="#bbb"
-                        value={ingredients}
-                        onChangeText={setIngredients}
-                    />
-                
-                
+                <FlatList
+                    horizontal
+                    data={ingredientsList}
+                    keyExtractor={(item) => item.label}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.ingredientsContainer}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={[styles.ingredientCard, selectedIngredients.includes(item.label) && styles.ingredientSelected]}
+                            onPress={() => toggleIngredient(item.label)}
+                        >
+                            <LottieView source={item.animation} autoPlay loop style={styles.lottieIngredients} />
+                            <Text style={styles.ingredientText}>{item.label}</Text>
+                        </TouchableOpacity>
+                    )}
+                />
+
+
 
                 <Text style={styles.label}>Instructions</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="How should it be prepared?"
-                    placeholderTextColor="#bbb"
-                    value={instructions}
-                    onChangeText={setInstructions}
-                    multiline
+                <FlatList
+                    horizontal
+                    data={instructionsList}
+                    keyExtractor={(item) => item.label}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.ingredientsContainer}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={[styles.ingredientCard, selectedInstruction === item.label && styles.ingredientSelected]}
+                            onPress={() => toggleInstruction(item.label)}
+                        >
+                            <LottieView source={item.animation} autoPlay loop style={styles.lottieIngredients} />
+                            <Text style={styles.ingredientText}>{item.label}</Text>
+                        </TouchableOpacity>
+                    )}
                 />
+
 
                 <TouchableOpacity style={styles.button} onPress={getDrinkSuggestion} disabled={loading}>
                     <Text style={styles.buttonText}>{loading ? "Fetching..." : "Get Drink Suggestion"}</Text>
@@ -246,134 +372,134 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: "#1C1C3A", padding: 20 },
-    container: { alignItems: "center" },
-    title: { fontSize: 24, fontWeight: "bold", color: "#D1C4E9", marginBottom: 20 },
-    label: { fontSize: 16, fontWeight: "500", color: "#C5CAE9", marginBottom: 8 },
-    buttonGroup: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginBottom: 15 },
-    selectButton: {
-        backgroundColor: "#3A2E6E",
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 8,
-        margin: 5,
+    screen: { flex: 1, backgroundColor: "#1C1C3A" },
+    title: { fontSize: 22, fontWeight: "bold", color: "#D1C4E9", marginBottom: 15, textAlign: "center" },
+    label: { fontSize: 16, fontWeight: "bold", color: "#C5CAE9", marginBottom: 8, textAlign: "center" },
+    cardContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginBottom: 10 },
+    card: {
+        width: 65,
+        height: 70,
+        backgroundColor: "#2A2A5A",
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
+        margin: 6,
+        borderWidth: 2,
     },
-    selectedButton: { backgroundColor: "#5D3FD3" },
-    selectButtonText: { color: "#EDE7F6", fontSize: 16 },
-    input: {
-        width: "100%",
-        backgroundColor: "#3A2E6E",
-        color: "#EDE7F6",
-        padding: 12,
-        borderRadius: 8,
-        marginBottom: 10,
+    touchableArea: { alignItems: "center" },
+    lottie: { width: 40, height: 40 },
+    lottieIngredients: { width: 50, height: 50 },
+
+    progressBarContainer: {
+        height: 8,
+        backgroundColor: "#3A2A6E",
+        borderRadius: 5,
+        width: "90%",
+        marginBottom: 5,
+        marginTop: 10,
+        alignSelf: "center",
     },
-    inputRow: {
+    progressBar: {
+        height: 8,
+        backgroundColor: "#FFD700",
+        borderRadius: 5,
+        padding: 5
+    },
+    budgetText: {
+        color: "#fff"
+    },
+    budgetOptions: {
         flexDirection: "row",
-        alignItems: "center",
+        justifyContent: "space-between",
         width: "100%",
-        marginBottom: 10,
-    },
-    addButton: {
-        backgroundColor: "#5D3FD3",
-        padding: 12,
-        borderRadius: 8,
-        marginLeft: 10,
-    },
-    addButtonText: { fontSize: 18, fontWeight: "bold", color: "#FFFFFF" },
-    button: {
-        backgroundColor: "#5D3FD3",
-        paddingVertical: 14,
-        borderRadius: 8,
         alignItems: "center",
-        width: "100%",
-        marginTop: 20,
     },
-    buttonText: { fontSize: 16, fontWeight: "bold", color: "#FFFFFF" },
-    ingredient: { color: "#EDE7F6", marginBottom: 5, fontSize: 14 },
+    budgetItem: {
+        alignItems: "center",
+    },
+    budgetButton: {
+        flex: 1,
+        alignItems: "center",
+        padding: 10,
+    },
+    budgetIndicator: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: "#666",
+    },
+    budgetSelected: {
+        backgroundColor: "#FFD700",
+    },
+    budgetLabel: {
+        color: "#C5CAE9",
+        fontSize: 12,
+        marginTop: 4,
+        textAlign: "center",
+    },
+    ingredientsContainer: { paddingHorizontal: 10 },
+    ingredientCard: { width: 110, height: 80, backgroundColor: "#2A2A5A", padding: 10, margin: 8, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+    ingredientSelected: { borderRadius:10, borderWidth: 2, borderColor:"#FFD700"},
+    ingredientText: { color: "#fff" },
+    button: { backgroundColor: "#FFD700", padding: 12, borderRadius: 8, alignItems: "center", marginTop: 20 },
+    buttonText: { fontSize: 16, fontWeight: "bold" },
     modalOverlay: {
         flex: 1,
-        backgroundColor: "rgba(0, 0, 0, 0.6)",
         justifyContent: "center",
         alignItems: "center",
+        backgroundColor: "rgba(0, 0, 0, 0.7)",
     },
     modalContainer: {
-        backgroundColor: "#3A2E6E",
-        padding: 20,
+        width: "80%",
+        backgroundColor: "#1C1C3A",
         borderRadius: 10,
-        width: "85%",
+        padding: 20,
         alignItems: "center",
-        maxHeight: 700,
-        width: 380
     },
     modalScroll: {
-        width: "100%",
         alignItems: "center",
     },
     resultTitle: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: "bold",
-        color: "#D1C4E9",
+        color: "#FFD700",
+        textAlign: "center",
         marginBottom: 10,
     },
     resultDescription: {
         fontSize: 16,
-        color: "#C5CAE9",
+        color: "#fff",
         textAlign: "center",
-        marginBottom: 20,
     },
     buttonContainer: {
-        flexDirection: "row",
-        gap: 10,
+        marginTop: 20,
     },
     favButton: {
-        backgroundColor: "#5D3FD3",
-        padding: 12,
+        backgroundColor: "#FFD700",
+        padding: 10,
         borderRadius: 8,
+        marginBottom: 10,
     },
     favButtonText: {
-        color: "#FFFFFF",
+        fontSize: 16,
+        fontWeight: "bold",
     },
     closeButton: {
-        backgroundColor: "#3A2E6E",
-        padding: 12,
+        backgroundColor: "#444",
+        padding: 10,
         borderRadius: 8,
     },
     closeButtonText: {
-        color: "#EDE7F6",
+        color: "#fff",
+        fontSize: 16,
     },
-
-    lottieContainer: {
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: [{ translateX: -100 }, { translateY: -100 }],
-        zIndex: 1000,
-        backgroundColor: "rgba(28, 28, 58, 0.6)",
-        width: 200,
-        height: 200,
-        borderRadius: 100,
-        justifyContent: "center",
-        alignItems: "center",
-        overflow: "hidden",
-        borderWidth: 4,
-        borderColor: "#D1C4E9",
-        shadowColor: "#A8DADC",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.8,
-        shadowRadius: 8,
-    },
-
-
-    lottie: {
-        width: 200,
-        height: 200,
-    },
-
-
-
 
 });
+
+
+
+
+
 
 
 

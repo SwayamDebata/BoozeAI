@@ -32,7 +32,8 @@ router.post(
   "/suggest",
   authenticate,
   asyncHandler(async (req, res) => {
-    const { mood, weather, ingredients, instructions, budget } = req.body;    
+    
+    const { mood, weather, ingredients, instruction, budget } = req.body;    
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     const prompt = `Suggest a unique cocktail recipe based on the following details:
@@ -53,7 +54,7 @@ Cocktail Name: [Name]
 Mood: ${mood}  
 Weather: ${weather}  
 Ingredients: ${ingredients} 
-Instructions:  ${instructions}
+Instructions:  ${instruction}
 Budget: ₹${budget}`;
 
     try {
@@ -67,10 +68,11 @@ Budget: ₹${budget}`;
         mood,
         weather,
         ingredients: ingredients, 
-        instructions,
+        instruction,
         budget,
         suggestion,
       });
+      
 
       const savedDrink = await newDrink.save();
 

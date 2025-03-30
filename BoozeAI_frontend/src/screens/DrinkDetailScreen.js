@@ -1,13 +1,39 @@
-import React from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
-import drink from '../../assets/man.png'
+import React, { useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated , SafeAreaView} from "react-native";
+import LottieView from "lottie-react-native";
+
 const DrinkDetailScreen = ({ route, navigation }) => {
-    const { drinkSuggestion } = route.params;
-    
+    const { drinkSuggestion, token } = route.params || {};
+    const [isFavorited, setIsFavorited] = useState(false);
+    const scaleAnim = new Animated.Value(1);
+
+
+    if (!drinkSuggestion || !drinkSuggestion.description) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.loadingText}>Loading drink details...</Text>
+            </View>
+        );
+    }
+
+    const extractDetails = (description) => {
+        const details = {};
+        description.split("\n").forEach((line) => {
+            if (line.startsWith("Cocktail Name:")) details.name = line.replace("Cocktail Name:", "").trim();
+            else if (line.startsWith("Mood:")) details.mood = line.replace("Mood:", "").trim();
+            else if (line.startsWith("Weather:")) details.weather = line.replace("Weather:", "").trim();
+            else if (line.startsWith("Ingredients:")) details.ingredients = line.replace("Ingredients:", "").trim();
+            else if (line.startsWith("Instructions:")) details.instructions = line.replace("Instructions:", "").trim();
+            else if (line.startsWith("Budget:")) details.budget = line.replace("Budget:", "").trim();
+        });
+        return details;
+    };
+
+    const drinkDetails = extractDetails(drinkSuggestion.description);
+
     const addToFavourite = async () => {
         if (!drinkSuggestion || !drinkSuggestion.id) {
             alert("Drink ID is missing!");
-            console.error("Drink suggestion data:", drinkSuggestion);
             return;
         }
 
@@ -23,7 +49,11 @@ const DrinkDetailScreen = ({ route, navigation }) => {
 
             const data = await response.json();
             if (response.ok) {
-                alert("Added to Favourites!");
+                setIsFavorited(true);
+                Animated.sequence([
+                    Animated.timing(scaleAnim, { toValue: 1.2, duration: 200, useNativeDriver: true }),
+                    Animated.timing(scaleAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+                ]).start();
             } else {
                 alert(data.error || "Failed to add to favourites");
             }
@@ -32,67 +62,142 @@ const DrinkDetailScreen = ({ route, navigation }) => {
             alert("Something went wrong!");
         }
     };
-    return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Image source={{ url: drinkSuggestion?.image || drink }} style={styles.image} />
-            <Text style={styles.title}>{drinkSuggestion?.name || "Unknown Drink"}</Text>
-            <Text style={styles.description}>{drinkSuggestion?.description || "No description available."}</Text>
-            
-            <TouchableOpacity style={styles.favButton} onPress={() => {addToFavourite}}>
-                <Text style={styles.favButtonText}>❤️ Add to Favourite</Text>
-            </TouchableOpacity>
 
-            <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
-                <Text style={styles.closeButtonText}>Go Back</Text>
-            </TouchableOpacity>
-        </ScrollView>
+    return (
+        <View style={styles.container}>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                <Text style={styles.title}>{drinkDetails.name || "Unknown Drink"}</Text>
+                <View style={styles.card}>
+                    <Text style={styles.label}>🍸 Ingredients</Text>
+                    <Text style={styles.value}>{drinkDetails.ingredients}</Text>
+                </View>
+
+                <View style={styles.card}>
+                    <Text style={styles.label}>📜 Instructions</Text>
+                    <Text style={styles.value}>{drinkDetails.instructions}</Text>
+                </View>
+
+                <View style={styles.card}>
+                    <Text style={styles.label}>💰 Budget</Text>
+                    <Text style={styles.value}>{drinkDetails.budget}</Text>
+                </View>
+                {isFavorited && (
+                    <LottieView
+                        source={require("../../assets/addtofav.json")}
+                        autoPlay
+                        loop={false}
+                        style={styles.lottie}
+                    />
+                )}
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity onPress={addToFavourite} activeOpacity={0.7}>
+                        <Animated.View style={[styles.favButton, { transform: [{ scale: scaleAnim }] }]}>
+                            <Text style={styles.favButtonText}>{isFavorited ? "❤️" : "🤍"} Add to Favourite</Text>
+                        </Animated.View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
+                        <Text style={styles.closeButtonText}>Close</Text>
+                    </TouchableOpacity>
+                    {/* <SafeAreaView style={styles.adContainer}>
+                    <View style={styles.adContainer}>
+                        <BannerAd
+                            unitId="ca-app-pub-4693002133615714/9025916110" // Use a real Ad Unit ID in production
+                            size={BannerAdSize.FULL_BANNER}
+                            requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                        />
+                    </View>
+                    </SafeAreaView> */}
+                </View>
+            </ScrollView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        flexGrow: 1,
+        flex: 1,
+        backgroundColor: "#1C1C3A",
         alignItems: "center",
-        padding: 20,
-        backgroundColor: "#f8f8f8",
+        paddingTop: 40,
+        paddingHorizontal: 20,
     },
-    image: {
-        width: "100%",
-        height: 300,
-        borderRadius: 10,
+    scrollContent: {
+        alignItems: "center",
+        paddingBottom: 50,
     },
     title: {
-        fontSize: 24,
+        fontSize: 26,
         fontWeight: "bold",
-        marginVertical: 10,
-    },
-    description: {
-        fontSize: 16,
+        color: "#D1C4E9",
         textAlign: "center",
         marginBottom: 20,
     },
-    favButton: {
-        backgroundColor: "#ff4757",
-        padding: 10,
-        borderRadius: 5,
-        width: "80%",
+    card: {
+        padding: 15,
+        borderRadius: 10,
+        width: "90%",
         alignItems: "center",
-        marginBottom: 10,
+        marginBottom: 15,
+    },
+    label: {
+        fontSize: 18,
+        fontWeight: "bold",
+        color: "#C5CAE9",
+        textAlign: "center",
+        marginBottom: 5,
+    },
+    value: {
+        fontSize: 16,
+        color: "#ffffff",
+        textAlign: "center",
+    },
+    buttonContainer: {
+        alignItems: "center",
+        width: "100%",
+        marginTop: 20,
+    },
+    favButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 30,
+        borderWidth: 2,
+        borderColor: "#ff4757",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    favButtonText: {
+        color: "#ff4757",
+        fontSize: 18,
+        fontWeight: "bold",
+    },
+    lottie: {
+        width: 150,
+        height: 150,
+        position: "absolute",
+        top: 80,
     },
     favButtonText: {
         color: "white",
         fontSize: 18,
     },
     closeButton: {
-        backgroundColor: "#57606f",
-        padding: 10,
-        borderRadius: 5,
-        width: "80%",
+        backgroundColor: "#C5CAE9",
+        padding: 12,
+        borderRadius: 30,
+        width: "60%",
         alignItems: "center",
+        margin: 10
     },
     closeButtonText: {
-        color: "white",
+        color: "black",
         fontSize: 18,
+    },
+    adContainer: {
+        width: "100%",
+        alignItems: "center",
+        marginTop: 10,
+        paddingBottom: 10,
     },
 });
 

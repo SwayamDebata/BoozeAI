@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-    View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Modal, Animated, FlatList
+    View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Animated, FlatList
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import LottieView from "lottie-react-native";
@@ -17,7 +17,6 @@ const HomeScreen = () => {
     const [drinkSuggestion, setDrinkSuggestion] = useState(null);
     const [error, setError] = useState(null);
     const [token, setToken] = useState(null);
-    const [modalVisible, setModalVisible] = useState(false);
     const [progress] = useState(new Animated.Value(0));
     const [selectedIngredients, setSelectedIngredients] = useState([]);
 
@@ -145,7 +144,6 @@ const HomeScreen = () => {
                 instruction: selectedInstruction,
             };
 
-            console.log("Sending Payload:", JSON.stringify(payload, null, 2));
             const response = await fetch(API_URL, {
                 method: "POST",
                 headers: {
@@ -156,17 +154,19 @@ const HomeScreen = () => {
             });
 
             const data = await response.json();
-
+            
 
             if (response.ok) {
                 if (data && typeof data === "object" && data.suggestion && data.id) {
-                    setDrinkSuggestion({
+                    const newDrinkSuggestion = {
                         id: data.id,
                         name: "Suggested Drink",
                         description: data.suggestion,
-                    });
-                    setModalVisible(true);
-                } else {
+                    };
+                    
+               setDrinkSuggestion(newDrinkSuggestion); 
+               navigation.navigate("DrinkDetail", { drinkSuggestion: newDrinkSuggestion, token: token });
+            } else {
                     setError("Unexpected response format.");
                     console.error("Unexpected API response:", data);
                 }
@@ -186,63 +186,17 @@ const HomeScreen = () => {
     };
 
     useEffect(() => {
-        Animated.timing(progress, {
-            toValue: budgets.indexOf(budget),
-            duration: 500,
-            useNativeDriver: false,
-        }).start();
+        const budgetIndex = budgets.indexOf(budget);
+        if (budgetIndex !== -1) {
+            Animated.timing(progress, {
+                toValue: budgetIndex,
+                duration: 500,
+                useNativeDriver: false,
+            }).start();
+        }
     }, [budget]);
 
 
-
-    const formatDescription = (description) => {
-        if (!description) return "";
-
-        const parts = description.split(/(\*\*.*?\*\*|##.*?\n|---)/); // Split on **bold**, ## headings, and ---
-
-        return parts.map((part, index) => {
-            if (part.startsWith("**") && part.endsWith("**")) {
-                return <Text key={index} style={{ fontWeight: "bold", color: "#F1FAEE" }}>{part.slice(2, -2)}</Text>;
-            }
-            if (part.startsWith("##")) {
-                return <Text key={index} style={{ fontSize: 18, fontWeight: "bold", marginVertical: 5, color: "#A8DADC" }}>{part.replace("##", "").trim()}</Text>;
-            }
-            if (part === "---") {
-                return <View key={index} style={{ borderBottomWidth: 1, borderBottomColor: "#A8DADC", marginVertical: 5 }} />;
-            }
-            return <Text key={index} style={{ color: "#F1FAEE" }}>{part}</Text>;
-        });
-    };
-
-
-    const addToFavourite = async () => {
-        if (!drinkSuggestion || !drinkSuggestion.id) {
-            alert("Drink ID is missing!");
-            console.error("Drink suggestion data:", drinkSuggestion);
-            return;
-        }
-
-        try {
-            const response = await fetch("https://boozeai.onrender.com/api/drinks/favourites", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token.trim()}`,
-                },
-                body: JSON.stringify({ drinkId: drinkSuggestion.id }),
-            });
-
-            const data = await response.json();
-            if (response.ok) {
-                alert("Added to Favourites!");
-            } else {
-                alert(data.error || "Failed to add to favourites");
-            }
-        } catch (error) {
-            console.error("Error adding to favourites:", error);
-            alert("Something went wrong!");
-        }
-    };
 
 
 
@@ -274,7 +228,7 @@ const HomeScreen = () => {
                     ))}
                 </View>
 
-                <Text style={styles.label}>Budget</Text>
+                <Text style={styles.label}>Drink Price</Text>
                 <View style={styles.progressBarContainer}>
                     <Animated.View style={[styles.progressBar, {
                         width: progress.interpolate({
@@ -292,7 +246,7 @@ const HomeScreen = () => {
                     ))}
                 </View>
 
-                <Text style={styles.label}>Ingredients</Text>
+                <Text style={styles.label}>Mix-ins</Text>
                 <FlatList
                     horizontal
                     data={ingredientsList}
@@ -312,7 +266,7 @@ const HomeScreen = () => {
 
 
 
-                <Text style={styles.label}>Instructions</Text>
+                <Text style={styles.label}>Core Liquor</Text>
                 <FlatList
                     horizontal
                     data={instructionsList}
@@ -340,32 +294,10 @@ const HomeScreen = () => {
                             source={require("../../assets/loading1.json")}
                             autoPlay
                             loop
-                            style={styles.lottie}
+                            style={styles.lottieLoad}
                         />
                     </View>
                 )}
-
-                {/* Modal for Drink Suggestion */}
-                <Modal visible={modalVisible} transparent={true} animationType="slide">
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalContainer}>
-                            <ScrollView contentContainerStyle={styles.modalScroll}>
-                                <Text style={styles.resultTitle}>{drinkSuggestion?.name || "Unknown Drink"}</Text>
-                                <Text style={styles.resultDescription}>{formatDescription(drinkSuggestion?.description)}</Text>
-
-                                <View style={styles.buttonContainer}>
-                                    <TouchableOpacity style={styles.favButton} onPress={addToFavourite}>
-                                        <Text style={styles.favButtonText}>❤️ Add to Favourite</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                                        <Text style={styles.closeButtonText}>Close</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </ScrollView>
-                        </View>
-                    </View>
-                </Modal>
             </ScrollView>
         </View>
     );
@@ -389,7 +321,28 @@ const styles = StyleSheet.create({
     touchableArea: { alignItems: "center" },
     lottie: { width: 40, height: 40 },
     lottieIngredients: { width: 50, height: 50 },
-
+    lottieContainer: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(28, 28, 58, 0.9)", // Semi-transparent dark overlay
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 10,
+    },
+    lottieLoad: {
+        width: 120,
+        height: 120,
+    },
+    loadingText: {
+        fontSize: 18,
+        color: "#C5CAE9",
+        marginTop: 10,
+        textAlign: "center",
+        fontWeight: "bold",
+    },
     progressBarContainer: {
         height: 8,
         backgroundColor: "#3A2A6E",
@@ -443,57 +396,6 @@ const styles = StyleSheet.create({
     ingredientText: { color: "#fff" },
     button: { backgroundColor: "#FFD700", padding: 12, borderRadius: 8, alignItems: "center", marginTop: 20 },
     buttonText: { fontSize: 16, fontWeight: "bold" },
-    modalOverlay: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.7)",
-    },
-    modalContainer: {
-        width: "80%",
-        backgroundColor: "#1C1C3A",
-        borderRadius: 10,
-        padding: 20,
-        alignItems: "center",
-    },
-    modalScroll: {
-        alignItems: "center",
-    },
-    resultTitle: {
-        fontSize: 20,
-        fontWeight: "bold",
-        color: "#FFD700",
-        textAlign: "center",
-        marginBottom: 10,
-    },
-    resultDescription: {
-        fontSize: 16,
-        color: "#fff",
-        textAlign: "center",
-    },
-    buttonContainer: {
-        marginTop: 20,
-    },
-    favButton: {
-        backgroundColor: "#FFD700",
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 10,
-    },
-    favButtonText: {
-        fontSize: 16,
-        fontWeight: "bold",
-    },
-    closeButton: {
-        backgroundColor: "#444",
-        padding: 10,
-        borderRadius: 8,
-    },
-    closeButtonText: {
-        color: "#fff",
-        fontSize: 16,
-    },
-
 });
 
 

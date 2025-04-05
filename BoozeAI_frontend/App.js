@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect} from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -9,6 +9,7 @@ import FavouriteScreen from "./src/screens/FavouriteScreen";
 import NearbyScreen from "./src/screens/NearbyScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import DrinkDetailScreen from "./src/screens/DrinkDetailScreen";
+import mobileAds from "react-native-google-mobile-ads"; 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -87,6 +88,14 @@ function MainTabs() {
 }
 
 export default function App() {
+  useEffect(() => {
+    mobileAds()
+      .initialize()
+      .then(() => {
+        console.log("Google Mobile Ads initialized");
+      })
+      .catch((error) => console.error("Ads Initialization Error:", error));
+  }, []);
   return (
     <NavigationContainer>
       <Stack.Navigator

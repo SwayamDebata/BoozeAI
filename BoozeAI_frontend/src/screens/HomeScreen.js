@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
-    View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Animated, FlatList
+    View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Animated, FlatList, PanResponder, Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import LottieView from "lottie-react-native";
@@ -19,6 +19,8 @@ const HomeScreen = () => {
     const [token, setToken] = useState(null);
     const [progress] = useState(new Animated.Value(0));
     const [selectedIngredients, setSelectedIngredients] = useState([]);
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+    const [showLottieEffect, setShowLottieEffect] = useState(false);
 
     const API_URL = "https://boozeai.onrender.com/api/drinks/suggest";
 
@@ -37,6 +39,7 @@ const HomeScreen = () => {
         { label: "Warm", animation: require("../../assets/warm.json") },
     ];
     const budgets = ["₹200-400", "₹400-600", "₹600-1000", "more"];
+    const screenWidth = Dimensions.get('window').width;
 
 
 
@@ -49,6 +52,16 @@ const HomeScreen = () => {
         { label: "Ginger Beer", animation: require("../../assets/ginger.json") },
         { label: "Sugar Syrup", animation: require("../../assets/sugar.json") },
         { label: "Tonic Water", animation: require("../../assets/water.json") },
+        { label: "coconut water", animation: require("../../assets/coconut.json") },
+        { label: "sugarcane", animation: require("../../assets/sugarcane.json") },
+        { label: "apple juice", animation: require("../../assets/apple.json") },
+        { label: "coffee", animation: require("../../assets/Coffee.json") },
+        { label: "chocolate", animation: require("../../assets/Chocolate.json") },
+        { label: "grape juice", animation: require("../../assets/grape.json") },
+        { label: "pineapple", animation: require("../../assets/Pineapple.json") },
+        { label: "mango", animation: require("../../assets/mango.json") },
+        { label: "watermelon", animation: require("../../assets/watermelon.json") },
+        { label: "redbull", animation: require("../../assets/redbull.json") },
     ];
 
     const instructionsList = [
@@ -70,6 +83,26 @@ const HomeScreen = () => {
     };
     const toggleInstruction = (instruction) => {
         setSelectedInstruction(instruction === selectedInstruction ? null : instruction);
+    };
+
+    const handlePress = () => {
+        Animated.sequence([
+            Animated.timing(scaleAnim, {
+                toValue: 0.95,
+                duration: 100,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                friction: 3,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
+        setShowLottieEffect(true);
+        setTimeout(() => setShowLottieEffect(false), 1000); 
+
+        getDrinkSuggestion(); 
     };
 
 
@@ -154,7 +187,7 @@ const HomeScreen = () => {
             });
 
             const data = await response.json();
-            
+
 
             if (response.ok) {
                 if (data && typeof data === "object" && data.suggestion && data.id) {
@@ -163,10 +196,10 @@ const HomeScreen = () => {
                         name: "Suggested Drink",
                         description: data.suggestion,
                     };
-                    
-               setDrinkSuggestion(newDrinkSuggestion); 
-               navigation.navigate("DrinkDetail", { drinkSuggestion: newDrinkSuggestion, token: token });
-            } else {
+
+                    setDrinkSuggestion(newDrinkSuggestion);
+                    navigation.navigate("DrinkDetail", { drinkSuggestion: newDrinkSuggestion, token: token });
+                } else {
                     setError("Unexpected response format.");
                     console.error("Unexpected API response:", data);
                 }
@@ -184,17 +217,84 @@ const HomeScreen = () => {
             setLoading(false);
         }
     };
+    const DraggableBudgetSlider = ({ budget, setBudget }) => {
+        const sliderWidth = screenWidth * 0.85;
+        const knobSize = 26;
+        const stepWidth = sliderWidth / (budgets.length - 1);
 
-    useEffect(() => {
-        const budgetIndex = budgets.indexOf(budget);
-        if (budgetIndex !== -1) {
-            Animated.timing(progress, {
-                toValue: budgetIndex,
-                duration: 500,
-                useNativeDriver: false,
-            }).start();
-        }
-    }, [budget]);
+        const panX = useRef(new Animated.Value(0)).current;
+        const positionX = useRef(0);
+
+        const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+
+        const panResponder = useRef(
+            PanResponder.create({
+                onStartShouldSetPanResponder: () => true,
+                onPanResponderGrant: () => {
+                    panX.stopAnimation();
+                },
+                onPanResponderMove: (_, gesture) => {
+                    const newX = clamp(positionX.current + gesture.dx, 0, sliderWidth);
+                    panX.setValue(newX);
+                },
+                onPanResponderRelease: (_, gesture) => {
+                    const newPos = clamp(positionX.current + gesture.dx, 0, sliderWidth);
+                    const closestIndex = Math.round(newPos / stepWidth);
+                    const snappedX = closestIndex * stepWidth;
+
+                    positionX.current = snappedX;
+                    setBudget(budgets[closestIndex]);
+
+                    Animated.spring(panX, {
+                        toValue: snappedX,
+                        useNativeDriver: false,
+                    }).start();
+                },
+            })
+        ).current;
+
+        useEffect(() => {
+            const index = budgets.indexOf(budget);
+            if (index !== -1) {
+                const x = index * stepWidth;
+                positionX.current = x;
+                panX.setValue(x);
+            }
+        }, [budget]);
+
+        return (
+            <View style={styles.sliderContainer}>
+                <View style={[styles.sliderTrack, { width: sliderWidth }]}>
+                    <Animated.View
+                        style={[
+                            styles.sliderFilled,
+                            {
+                                width: panX,
+                            },
+                        ]}
+                    />
+                    <Animated.View
+                        {...panResponder.panHandlers}
+                        style={[
+                            styles.knob,
+                            {
+                                transform: [{ translateX: panX }],
+                            },
+                        ]}
+                    />
+                </View>
+                <View style={[styles.budgetLabels, { width: sliderWidth }]}>
+                    {budgets.map((label, index) => (
+                        <Text key={label} style={styles.budgetText}>{label}</Text>
+                    ))}
+                </View>
+            </View>
+        );
+    };
+
+
+
+
 
 
 
@@ -211,7 +311,7 @@ const HomeScreen = () => {
                             key={item.label}
                             item={item}
                             selected={mood === item.label}
-                            onPress={() => setMood(item.label)} 
+                            onPress={() => setMood(item.label)}
                         />
                     ))}
                 </View>
@@ -223,28 +323,14 @@ const HomeScreen = () => {
                             key={item.label}
                             item={item}
                             selected={weather === item.label}
-                            onPress={() => setWeather(item.label)} 
+                            onPress={() => setWeather(item.label)}
                         />
                     ))}
                 </View>
 
                 <Text style={styles.label}>Drink Price</Text>
-                <View style={styles.progressBarContainer}>
-                    <Animated.View style={[styles.progressBar, {
-                        width: progress.interpolate({
-                            inputRange: [0, budgets.length - 1],
-                            outputRange: ['0%', '100%'],
-                        })
-                    }]} />
-                </View>
-                <View style={styles.budgetOptions}>
-                    {budgets.map((option, index) => (
-                        <TouchableOpacity key={index} style={styles.budgetButton} onPress={() => setBudget(option)}>
-                            <View style={[styles.budgetIndicator, budget === option && styles.budgetSelected]} />
-                            <Text style={styles.budgetText}>{option}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                <DraggableBudgetSlider budget={budget} setBudget={setBudget} />
+
 
                 <Text style={styles.label}>Mix-ins</Text>
                 <FlatList
@@ -285,9 +371,34 @@ const HomeScreen = () => {
                 />
 
 
-                <TouchableOpacity style={styles.button} onPress={getDrinkSuggestion} disabled={loading}>
-                    <Text style={styles.buttonText}>{loading ? "Fetching..." : "Get Drink Suggestion"}</Text>
-                </TouchableOpacity>
+                <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+                    <TouchableOpacity
+                        style={styles.button}
+                        onPress={handlePress}
+                        disabled={loading}
+                    >
+                        {/* Constant sparkle animation */}
+                        <LottieView
+                            source={require("../../assets/Sparkle.json")}
+                            autoPlay
+                            loop
+                            style={{
+                                position: "absolute",
+                                top: 2,
+                                left: 0,
+                                right: 0,
+                                height: 40,
+                                zIndex: 0, 
+                            }}
+                        />
+                        {/* Button text */}
+                        <Text style={[styles.buttonText, { zIndex: 1 }]}>
+                            {loading ? "Fetching..." : "Get Drink Suggestion"}
+                        </Text>
+                    </TouchableOpacity>
+                </Animated.View>
+
+
                 {loading && (
                     <View style={styles.lottieContainer}>
                         <LottieView
@@ -327,7 +438,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: "rgba(28, 28, 58, 0.9)", // Semi-transparent dark overlay
+        backgroundColor: "rgba(28, 28, 58, 0.9)",
         justifyContent: "center",
         alignItems: "center",
         zIndex: 10,
@@ -343,59 +454,69 @@ const styles = StyleSheet.create({
         textAlign: "center",
         fontWeight: "bold",
     },
-    progressBarContainer: {
-        height: 8,
-        backgroundColor: "#3A2A6E",
-        borderRadius: 5,
-        width: "90%",
-        marginBottom: 5,
-        marginTop: 10,
-        alignSelf: "center",
-    },
-    progressBar: {
-        height: 8,
-        backgroundColor: "#FFD700",
-        borderRadius: 5,
-        padding: 5
-    },
     budgetText: {
         color: "#fff"
     },
-    budgetOptions: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        width: "100%",
-        alignItems: "center",
-    },
-    budgetItem: {
-        alignItems: "center",
-    },
-    budgetButton: {
-        flex: 1,
-        alignItems: "center",
-        padding: 10,
-    },
-    budgetIndicator: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: "#666",
-    },
-    budgetSelected: {
-        backgroundColor: "#FFD700",
-    },
-    budgetLabel: {
-        color: "#C5CAE9",
-        fontSize: 12,
-        marginTop: 4,
-        textAlign: "center",
-    },
-    ingredientsContainer: { paddingHorizontal: 10 },
+    ingredientsContainer: { paddingHorizontal: 10, marginBottom: 10 },
     ingredientCard: { width: 110, height: 80, backgroundColor: "#2A2A5A", padding: 10, margin: 8, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-    ingredientSelected: { borderRadius:10, borderWidth: 2, borderColor:"#FFD700"},
+    ingredientSelected: { borderRadius: 10, borderWidth: 2, borderColor: "#FFD700" },
     ingredientText: { color: "#fff" },
-    button: { backgroundColor: "#FFD700", padding: 12, borderRadius: 8, alignItems: "center", marginTop: 20 },
+    button: {
+        backgroundColor: "#FFD700",
+        padding: 14,
+        borderRadius: 12,
+        alignItems: "center",
+        marginTop: 20,
+        width: "90%",
+        alignSelf: "center",
+        elevation: 4,
+        shadowColor: "#FFD700",
+        shadowOpacity: 0.6,
+        shadowOffset: { width: 0, height: 6 },
+        shadowRadius: 10,
+        flexDirection: "row",
+        justifyContent: "center",
+        position: "relative",
+    },
     buttonText: { fontSize: 16, fontWeight: "bold" },
+    sliderContainer: {
+        alignItems: 'center',
+        marginTop: 15,
+        marginBottom: 15,
+    },
+    sliderTrack: {
+        height: 6,
+        backgroundColor: '#444A88',
+        borderRadius: 3,
+        position: 'relative',
+        justifyContent: 'center',
+    },
+    sliderFilled: {
+        height: 6,
+        backgroundColor: '#FFD700',
+        borderRadius: 3,
+        position: 'absolute',
+        left: 0,
+        top: 0,
+    },
+    knob: {
+        position: 'absolute',
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: '#FFD700',
+        borderWidth: 2,
+        borderColor: '#1C1C3A',
+        top: -10,
+        zIndex: 10,
+    },
+
+    budgetLabels: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '80%',
+        marginTop: 10,
+    },
 });
 
 

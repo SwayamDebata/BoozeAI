@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated , SafeAreaView} from "react-native";
 import LottieView from "lottie-react-native";
+import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads";
+import { AdsConsent } from 'react-native-google-mobile-ads';
 
 const DrinkDetailScreen = ({ route, navigation }) => {
     const { drinkSuggestion, token } = route.params || {};
     const [isFavorited, setIsFavorited] = useState(false);
     const scaleAnim = new Animated.Value(1);
-
+    const [showAnimation, setShowAnimation] = useState(false);
 
     if (!drinkSuggestion || !drinkSuggestion.description) {
         return (
@@ -30,6 +32,9 @@ const DrinkDetailScreen = ({ route, navigation }) => {
     };
 
     const drinkDetails = extractDetails(drinkSuggestion.description);
+    const adUnitId = __DEV__
+  ? TestIds.BANNER 
+  : "ca-app-pub-4693002133615714/9025916110"; 
 
     const addToFavourite = async () => {
         if (!drinkSuggestion || !drinkSuggestion.id) {
@@ -50,6 +55,8 @@ const DrinkDetailScreen = ({ route, navigation }) => {
             const data = await response.json();
             if (response.ok) {
                 setIsFavorited(true);
+                setShowAnimation(true); 
+                setTimeout(() => setShowAnimation(false), 2000);
                 Animated.sequence([
                     Animated.timing(scaleAnim, { toValue: 1.2, duration: 200, useNativeDriver: true }),
                     Animated.timing(scaleAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
@@ -81,35 +88,33 @@ const DrinkDetailScreen = ({ route, navigation }) => {
                     <Text style={styles.label}>💰 Budget</Text>
                     <Text style={styles.value}>{drinkDetails.budget}</Text>
                 </View>
-                {isFavorited && (
-                    <LottieView
-                        source={require("../../assets/addtofav.json")}
-                        autoPlay
-                        loop={false}
-                        style={styles.lottie}
-                    />
-                )}
+
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity onPress={addToFavourite} activeOpacity={0.7}>
                         <Animated.View style={[styles.favButton, { transform: [{ scale: scaleAnim }] }]}>
                             <Text style={styles.favButtonText}>{isFavorited ? "❤️" : "🤍"} Add to Favourite</Text>
                         </Animated.View>
                     </TouchableOpacity>
-
+                    {showAnimation && (
+                        <LottieView
+                            source={require("../../assets/addtofav.json")}
+                            autoPlay
+                            loop={false}
+                            style={styles.lottie}
+                        />
+                    )}
                     <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
                         <Text style={styles.closeButtonText}>Close</Text>
                     </TouchableOpacity>
-                    {/* <SafeAreaView style={styles.adContainer}>
-                    <View style={styles.adContainer}>
-                        <BannerAd
-                            unitId="ca-app-pub-4693002133615714/9025916110" // Use a real Ad Unit ID in production
-                            size={BannerAdSize.FULL_BANNER}
-                            requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-                        />
-                    </View>
-                    </SafeAreaView> */}
                 </View>
             </ScrollView>
+            <SafeAreaView style={styles.adContainer}>
+                <BannerAd
+                    unitId={adUnitId}
+                    size={BannerAdSize.BANNER}
+                    requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                />
+            </SafeAreaView>
         </View>
     );
 };
@@ -175,7 +180,7 @@ const styles = StyleSheet.create({
         width: 150,
         height: 150,
         position: "absolute",
-        top: 80,
+        bottom: 20, 
     },
     favButtonText: {
         color: "white",
@@ -196,8 +201,8 @@ const styles = StyleSheet.create({
     adContainer: {
         width: "100%",
         alignItems: "center",
-        marginTop: 10,
-        paddingBottom: 10,
+        justifyContent: "center",
+        marginBottom: 10,
     },
 });
 

@@ -37,10 +37,12 @@ router.post(
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     const prompt = `Suggest a unique cocktail recipe based on the following details:
-- If Whiskey is suggested, randomly choose between Amrut, Paul John, Royal Stag, Blenders Pride, or Antiquity Blue.
-- If Beer is suggested, randomly choose between Tuborg, Bira, or Kingfisher.
-- If Rum is suggested, randomly choose between Old Monk, Bacardi, or another Indian rum brand. Avoid repeating the same brand frequently.
-- If Vodka is suggested, randomly choose between Absolut, Magic Moments, Romanov, or another popular vodka brand.
+- If Whiskey is suggested, randomly choose between Amrut, Paul John, Royal Stag, Blenders Pride, Antiquity Blue, Signature, McDowell's No.1, 100 Pipers, Black Dog, Imperial Blue.
+- If Beer is suggested, randomly choose between Tuborg, Bira, Kingfisher, Budweiser, Heineken, Corona, Simba, or White Owl.
+- If Rum is suggested, randomly choose between Old Monk, Bacardi, Captain Morgan, Malibu, Havana Club, Hercules, Jolly Roger, or Maka Zai. Avoid repeating the same brand frequently.
+- If Vodka is suggested, randomly choose between Absolut, Magic Moments, Romanov, Smirnoff, Grey Goose, Belvedere, or White Mischief.
+- If Tequila is suggested, randomly choose between Sierra, Jose Cuervo, Patrón, DesmondJi, or Camarena.
+- If Gin is suggested, randomly choose between Greater Than, Hapusa, Bombay Sapphire, Tanqueray, Hendrick's, or Stranger & Sons.
 - Important: Do not mix different liquor types (e.g., whiskey + rum + beer) in a single cocktail.
 - Ensure fair rotation of liquor brands across different recipes.
 - The budget should be presented in **Indian Rupees (₹ INR)**.

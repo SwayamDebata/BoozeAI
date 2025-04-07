@@ -89,7 +89,7 @@ Budget: ₹${budget}`;
 
 
 
-// Add a drink to the user's favourites
+// Add favourite drink
 router.post(
   "/favourites",
   authenticate,
@@ -131,7 +131,7 @@ router.post(
 
 
 
-// Get user's favourite drinks
+// Get favourite drinks
 router.get(
   "/favourites",
   authenticate,

@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-let isConnected = false; // Track connection status
+let isConnected = false; 
 
 const connectDb = async () => {
     if (isConnected) {
@@ -12,7 +12,7 @@ const connectDb = async () => {
         const connect = await mongoose.connect(process.env.MONGO_URI, {
             writeConcern: { w: "majority" }, 
         });
-        isConnected = true; // Mark as connected
+        isConnected = true; 
         console.log("Database Connected", connect.connection.host, connect.connection.name);
     } catch (err) {
         console.error("Database Connection Error:", err);

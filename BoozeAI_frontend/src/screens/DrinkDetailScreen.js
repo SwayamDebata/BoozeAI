@@ -72,7 +72,7 @@ const DrinkDetailScreen = ({ route, navigation }) => {
 
     return (
         <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <Text style={styles.title}>{drinkDetails.name || "Unknown Drink"}</Text>
                 <View style={styles.card}>
                     <Text style={styles.label}>🍸 Ingredients</Text>

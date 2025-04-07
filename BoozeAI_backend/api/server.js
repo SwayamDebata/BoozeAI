@@ -18,19 +18,19 @@ admin.initializeApp({
 const app = express();
 app.get('/', (req,res)=> res.status(200).json({message: "we really cook"}))
 
-// Middleware
+
 app.use(express.json({ limit: "10mb" })); 
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(cookieParser());
 
-// Connect Database
+
 connectDB();
 
-// Routes
+
 app.use("/api/auth", require("./routes/authRouter"));
 app.use("/api/drinks", require("./routes/drinksRouter"));
 
-// Global Error Handler
+
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;

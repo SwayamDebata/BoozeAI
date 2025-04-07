@@ -1,13 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Alert, TouchableOpacity, SafeAreaView } from "react-native";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import auth from "@react-native-firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import LottieView from "lottie-react-native";
+import { statusCodes } from "@react-native-google-signin/google-signin";
+import {
+  BannerAd,
+  BannerAdSize,
+  TestIds,
+} from "react-native-google-mobile-ads";
 
 const AuthScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const adUnitId = __DEV__
+  ? TestIds.BANNER
+  : "ca-app-pub-4693002133615714/9025916110";
 
   useEffect(() => {
     GoogleSignin.configure({
@@ -82,14 +92,15 @@ const AuthScreen = ({ navigation }) => {
 
   const signInWithGoogle = async () => {
     try {
+      setIsLoggingIn(true);
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
+  
       const idToken = userInfo?.idToken || userInfo?.data?.idToken;
-
       if (!idToken) {
         throw new Error("No Google ID Token found in response");
       }
-
+  
       const firebaseUser = await auth().signInWithCredential(auth.GoogleAuthProvider.credential(idToken));
       const firebaseIdToken = await firebaseUser.user.getIdToken(true);
       const response = await fetch("https://boozeai.onrender.com/api/auth/google-login", {
@@ -97,22 +108,28 @@ const AuthScreen = ({ navigation }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: firebaseIdToken }),
       });
-
+  
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Authentication failed");
-      }
-
+      if (!response.ok) throw new Error(data.message || "Authentication failed");
+  
       await AsyncStorage.setItem("token", data.token);
-      navigation.replace("MainTabs");
+      setTimeout(() => {
+        navigation.replace("MainTabs");
+      }, 2500);
     } catch (error) {
-      console.error("Google Sign-In Error:", error);
-      Alert.alert("Sign-in Error", error.message || "Something went wrong!");
+      const isUserCancelled = error.code === statusCodes.SIGN_IN_CANCELLED || error.message.includes("SIGN_IN_CANCELLED");
+  
+      if (!isUserCancelled) {
+        console.error("Google Sign-In Error:", error);
+        Alert.alert("Sign-in Error", error.message || "Something went wrong!");
+      }
+  
+      setIsLoggingIn(false); 
     }
   };
+  
 
-  if (loading) {
+  if (loading || isLoggingIn) {
     return (
       <View style={styles.loaderContainer}>
         <LottieView
@@ -121,30 +138,63 @@ const AuthScreen = ({ navigation }) => {
           loop
           style={styles.lottie}
         />
-        <Text style={styles.loadingText}>Checking authentication...</Text>
+        <Text style={styles.loadingText}>
+          {isLoggingIn ? "Hold tight, taking you cocktail wonderland... 🍸" : "Checking authentication..."}
+        </Text>
       </View>
     );
   }
+  
 
   return (
-    <View style={styles.container}>
-      <LottieView
-        source={require("../../assets/loading1.json")}
-        autoPlay
-        loop
-        style={styles.lottieWelcome}
-      />
-      <Text style={styles.title}>Welcome to BoozeAI!</Text>
-      <Text style={styles.subtitle}>Your AI-powered bartender 🍹</Text>
+    <View style={styles.fullScreen}>
+  <View style={styles.centeredContent}>
+    <LottieView
+      source={require("../../assets/loading1.json")}
+      autoPlay
+      loop
+      style={styles.lottieWelcome}
+    />
+    <Text style={styles.title}>Welcome to BoozeAI!</Text>
+    <Text style={styles.subtitle}>Your AI-powered bartender 🍹</Text>
 
-      <TouchableOpacity style={styles.googleButton} onPress={signInWithGoogle}>
-        <Text style={styles.googleButtonText}>Sign in with Google</Text>
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity style={styles.googleButton} onPress={signInWithGoogle}>
+      <Text style={styles.googleButtonText}>Sign in with Google</Text>
+    </TouchableOpacity>
+  </View>
+
+  <SafeAreaView style={styles.adContainer}>
+    <BannerAd
+      unitId={adUnitId}
+      size={BannerAdSize.BANNER}
+      requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+    />
+  </SafeAreaView>
+</View>
+
   );
+  
+  
 };
 
 const styles = StyleSheet.create({
+  fullScreen: {
+    flex: 1,
+    backgroundColor: "#1C1C3A",
+  },
+  
+  centeredContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  
+  adContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 10,
+  },
+  
   container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1C1C3A" },
   title: { fontSize: 26, fontWeight: "bold", color: "#F8E71C", marginTop: 20 },
   subtitle: { fontSize: 16, color: "#C5CAE9", marginBottom: 20, textAlign: "center", paddingHorizontal: 20 },

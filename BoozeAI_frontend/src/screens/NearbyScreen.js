@@ -56,19 +56,33 @@ const NearbyScreen = () => {
   };
 
   const fetchLiquorStores = async (latitude, longitude) => {
+    const queries = ["liquor store", "wine shop", "wines", "alcohol"];
+    const allResults = [];
+  
     try {
-      const response = await axios.get(FOURSQUARE_URL, {
-        headers: {
-          Authorization: `fsq3EenX8Pa+QekkeDvCdyKQRi6sOfA4lfqvWGarDoTBpUs=`,
-        },
-        params: {
-          query: "liquor store",
-          ll: `${latitude},${longitude}`,
-          radius: 5000,
-          limit: 10,
-        },
-      });
-      setShops(response.data.results || []);
+      for (const query of queries) {
+        const res = await axios.get(FOURSQUARE_URL, {
+          headers: {
+            Authorization: `fsq3EenX8Pa+QekkeDvCdyKQRi6sOfA4lfqvWGarDoTBpUs=`,
+          },
+          params: {
+            query,
+            ll: `${latitude},${longitude}`,
+            radius: 5000,
+            limit: 30, 
+          },
+        });
+  
+        if (res.data.results) {
+          allResults.push(...res.data.results);
+        }
+      }
+  
+      const uniqueResults = Array.from(
+        new Map(allResults.map((shop) => [shop.fsq_id, shop])).values()
+      );
+  
+      setShops(uniqueResults);
     } catch (error) {
       console.error("Error fetching liquor stores:", error);
       setError("Failed to fetch nearby stores. Try again later.");

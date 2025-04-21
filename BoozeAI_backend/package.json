@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-  "test": "echo \"Error: no test specified\" && exit 1",
-  "dev": "nodemon api/server.js",
-  "start": "node api/server.js",
-  "build": "npm install"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --require ./api/preload.js api/server.js",
+    "start": "node api/server.js",
+    "build": "npm install"
   },
   "keywords": [],
   "author": "",
@@ -14,7 +14,9 @@
   "type": "commonjs",
   "description": "",
   "dependencies": {
+    "@cometchat/chat-sdk-react-native": "^4.0.12",
     "@google/generative-ai": "^0.22.0",
+    "@react-native-async-storage/async-storage": "^2.1.2",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -23,12 +25,18 @@
     "express-async-handler": "^1.2.0",
     "firebase-admin": "^13.1.0",
     "google-auth-library": "^9.15.1",
+    "install": "^0.13.0",
+    "jsdom": "^26.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.10.0",
+    "node-fetch": "^3.3.2",
+    "npm": "^11.3.0",
     "openai": "^4.83.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "serverless-http": "^3.2.0"
+    "serverless-http": "^3.2.0",
+    "ws": "^8.18.1",
+    "xhr2": "^0.2.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

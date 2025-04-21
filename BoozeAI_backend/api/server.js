@@ -29,7 +29,7 @@ connectDB();
 
 app.use("/api/auth", require("./routes/authRouter"));
 app.use("/api/drinks", require("./routes/drinksRouter"));
-
+app.use("/api/chat", require("./routes/chatRouter"));
 
 app.use(errorHandler);
 

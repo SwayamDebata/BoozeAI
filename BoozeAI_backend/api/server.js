@@ -6,7 +6,7 @@ const connectDB = require("./config/dbConnection");
 const errorHandler = require("./middleware/errorHandler");
 const admin = require("firebase-admin");
 const serverless = require("serverless-http");
-
+const chatRouter = require('./routes/chatRouter'); 
 dotenv.config();
 
 const serviceAccount = require("./config/firebaseServiceAccount.json");
@@ -26,7 +26,7 @@ app.use(cookieParser());
 
 connectDB();
 
-
+app.use('/api/anonymous-chat', chatRouter);
 app.use("/api/auth", require("./routes/authRouter"));
 app.use("/api/drinks", require("./routes/drinksRouter"));
 app.use("/api/chat", require("./routes/chatRouter"));

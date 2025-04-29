@@ -14,8 +14,25 @@ const FavouriteScreen = () => {
   const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
-    fetchTokenAndFavourites();
+    const getToken = async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem("token");
+        if (storedToken) setToken(storedToken);
+      } catch (error) {
+        console.error("❌ Error retrieving token:", error);
+      }
+    };
+    getToken();
   }, []);
+  
+  useEffect(() => {
+  if (token) {
+    setLoading(true);
+    fetchFavourites(token).finally(() => setLoading(false));
+  }
+}, [token]);
+
+  
 
   const fetchTokenAndFavourites = async () => {
     try {

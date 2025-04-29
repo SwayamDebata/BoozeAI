@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import {
-    View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Animated, FlatList, PanResponder, Dimensions,
+    View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Animated, FlatList, PanResponder, Dimensions, Pressable
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import LottieView from "lottie-react-native";
@@ -173,8 +173,8 @@ const HomeScreen = () => {
                 mood,
                 weather,
                 budget,
-                ingredients: selectedIngredients.join(", "),
-                instruction: selectedInstruction,
+                ...(selectedIngredients.length > 0 && { ingredients: selectedIngredients.join(", ") }),
+                ...(selectedInstruction && { instruction: selectedInstruction }),
             };
 
             const response = await fetch(API_URL, {
@@ -217,53 +217,64 @@ const HomeScreen = () => {
             setLoading(false);
         }
     };
-    const DraggableBudgetSlider = ({ budget, setBudget }) => {
-        const sliderWidth = screenWidth * 0.85;
-        const knobSize = 26;
-        const stepWidth = sliderWidth / (budgets.length - 1);
+    
+const DraggableBudgetSlider = ({ budget, setBudget }) => {
+    const sliderWidth = screenWidth * 0.85;
+    const knobSize = 26;
+    const stepWidth = sliderWidth / (budgets.length - 1);
 
-        const panX = useRef(new Animated.Value(0)).current;
-        const positionX = useRef(0);
+    const panX = useRef(new Animated.Value(0)).current;
+    const positionX = useRef(0);
 
-        const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+    const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 
-        const panResponder = useRef(
-            PanResponder.create({
-                onStartShouldSetPanResponder: () => true,
-                onPanResponderGrant: () => {
-                    panX.stopAnimation();
-                },
-                onPanResponderMove: (_, gesture) => {
-                    const newX = clamp(positionX.current + gesture.dx, 0, sliderWidth);
-                    panX.setValue(newX);
-                },
-                onPanResponderRelease: (_, gesture) => {
-                    const newPos = clamp(positionX.current + gesture.dx, 0, sliderWidth);
-                    const closestIndex = Math.round(newPos / stepWidth);
-                    const snappedX = closestIndex * stepWidth;
+    const moveToPosition = (x) => {
+        const newPos = clamp(x, 0, sliderWidth);
+        const closestIndex = Math.round(newPos / stepWidth);
+        const snappedX = closestIndex * stepWidth;
 
-                    positionX.current = snappedX;
-                    setBudget(budgets[closestIndex]);
+        positionX.current = snappedX;
+        setBudget(budgets[closestIndex]);
 
-                    Animated.spring(panX, {
-                        toValue: snappedX,
-                        useNativeDriver: false,
-                    }).start();
-                },
-            })
-        ).current;
+        Animated.spring(panX, {
+            toValue: snappedX,
+            useNativeDriver: false,
+        }).start();
+    };
 
-        useEffect(() => {
-            const index = budgets.indexOf(budget);
-            if (index !== -1) {
-                const x = index * stepWidth;
-                positionX.current = x;
-                panX.setValue(x);
-            }
-        }, [budget]);
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onPanResponderGrant: () => {
+                panX.stopAnimation();
+            },
+            onPanResponderMove: (_, gesture) => {
+                const newX = clamp(positionX.current + gesture.dx, 0, sliderWidth);
+                panX.setValue(newX);
+            },
+            onPanResponderRelease: (_, gesture) => {
+                moveToPosition(positionX.current + gesture.dx);
+            },
+        })
+    ).current;
 
-        return (
-            <View style={styles.sliderContainer}>
+    useEffect(() => {
+        const index = budgets.indexOf(budget);
+        if (index !== -1) {
+            const x = index * stepWidth;
+            positionX.current = x;
+            panX.setValue(x);
+        }
+    }, [budget]);
+
+    const handleTrackPress = (event) => {
+        const { locationX } = event.nativeEvent;
+        moveToPosition(locationX);
+    };
+
+    return (
+        <View style={styles.sliderContainer}>
+            <Pressable onPress={handleTrackPress}>
                 <View style={[styles.sliderTrack, { width: sliderWidth }]}>
                     <Animated.View
                         style={[
@@ -283,15 +294,15 @@ const HomeScreen = () => {
                         ]}
                     />
                 </View>
-                <View style={[styles.budgetLabels, { width: sliderWidth }]}>
-                    {budgets.map((label, index) => (
-                        <Text key={label} style={styles.budgetText}>{label}</Text>
-                    ))}
-                </View>
+            </Pressable>
+            <View style={[styles.budgetLabels, { width: sliderWidth }]}>
+                {budgets.map((label, index) => (
+                    <Text key={label} style={styles.budgetText}>{label}</Text>
+                ))}
             </View>
-        );
-    };
-
+        </View>
+    );
+};
 
 
 

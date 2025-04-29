@@ -121,7 +121,7 @@ const AuthScreen = ({ navigation }) => {
   
       if (!isUserCancelled) {
         console.error("Google Sign-In Error:", error);
-        Alert.alert("Sign-in Error", error.message || "Something went wrong!");
+        // Alert.alert("Sign-in Error", error.message || "Something went wrong!");
       }
   
       setIsLoggingIn(false); 
@@ -139,7 +139,7 @@ const AuthScreen = ({ navigation }) => {
           style={styles.lottie}
         />
         <Text style={styles.loadingText}>
-          {isLoggingIn ? "Hold tight, taking you cocktail wonderland... 🍸" : "Checking authentication..."}
+          {isLoggingIn ? "Hold tight, taking you to cocktail wonderland... 🍸" : "Checking authentication..."}
         </Text>
       </View>
     );

@@ -29,7 +29,9 @@ const HomeScreen = () => {
     const [selectedIngredients, setSelectedIngredients] = useState([]);
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const [showLottieEffect, setShowLottieEffect] = useState(false);
-    const [interstitialLoaded, setInterstitialLoaded] = useState(false);
+    const [interstitials, setInterstitials] = useState(null);
+    const interstitialLoadedRef = useRef(false);
+
     const interstitial = InterstitialAd.createForAdRequest(adUnitId, {
         requestNonPersonalizedAdsOnly: true,
         keywords: ['drinks', 'beverages', 'cocktails', 'alcohol', 'soft drinks', 'juice', 'smoothies', 'mocktails', 'beer', 'wine', 
@@ -163,20 +165,6 @@ const HomeScreen = () => {
 
 
     useEffect(() => {
-        const unsubscribeLoaded = interstitial.addAdEventListener(
-            AdEventType.LOADED,
-            () => {
-                setInterstitialLoaded(true);
-            }
-        );
-        const unsubscribeClosed = interstitial.addAdEventListener(
-            AdEventType.CLOSED,
-            () => {
-                setInterstitialLoaded(false);
-                interstitial.load(); 
-            }
-        );
-        interstitial.load();
         const fetchToken = async () => {
             try {
                 const storedToken = await AsyncStorage.getItem("token");
@@ -191,18 +179,42 @@ const HomeScreen = () => {
             }
         };
         fetchToken();
-        return () => {
-        unsubscribeLoaded();
-        unsubscribeClosed();
-    };
     }, []);
-    const showInterstitial = () => {
-        if (interstitialLoaded) {
-            interstitial.show();
-        } else {
-            console.log('Interstitial not ready yet');
-        }
+
+    const loadNewInterstitial = () => {
+        const newAd = InterstitialAd.createForAdRequest(adUnitId, {
+            requestNonPersonalizedAdsOnly: true,
+        });
+    
+        const adLoadPromise = new Promise((resolve) => {
+            const onLoaded = newAd.addAdEventListener(AdEventType.LOADED, () => {
+                interstitialLoadedRef.current = true;
+                resolve();
+                onLoaded();
+            });
+    
+            const onClosed = newAd.addAdEventListener(AdEventType.CLOSED, () => {
+                interstitialLoadedRef.current = false;
+                loadNewInterstitial(); 
+                onClosed(); 
+            });
+        });
+    
+        newAd.load();
+        newAd._adLoadPromise = adLoadPromise;
+    
+        setInterstitials(newAd);
     };
+    
+    useEffect(() => {
+        loadNewInterstitial();
+        return () => {
+            if (interstitials) {
+                interstitials.removeAllListeners();
+            }
+        };
+    }, []);
+    
     const getDrinkSuggestion = async () => {
         if (!token || typeof token !== "string") {
             navigation.replace("AuthScreen");
@@ -214,7 +226,14 @@ const HomeScreen = () => {
         setDrinkSuggestion(null);
 
         try {
-            showInterstitial();
+            await interstitials?._adLoadPromise;
+
+            if (interstitialLoadedRef.current) {
+                await interstitials.show();
+            } else {
+                console.warn("Interstitial not loaded. Skipping ad.");
+            }
+
             const payload = {
                 mood,
                 weather,

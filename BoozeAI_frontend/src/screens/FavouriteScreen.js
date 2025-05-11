@@ -5,6 +5,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import LottieView from "lottie-react-native";
+import { useFocusEffect } from "@react-navigation/native";
 
 const FavouriteScreen = () => {
   const [token, setToken] = useState(null);
@@ -25,12 +26,15 @@ const FavouriteScreen = () => {
     getToken();
   }, []);
   
-  useEffect(() => {
-  if (token) {
-    setLoading(true);
-    fetchFavourites(token).finally(() => setLoading(false));
-  }
-}, [token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (token) {
+        fetchFavourites(token).finally(() => setLoading(false));
+      }
+    }, [token])
+  );
+  
 
   
 

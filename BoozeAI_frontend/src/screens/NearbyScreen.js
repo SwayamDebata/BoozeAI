@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View, Text, FlatList, Linking, ActivityIndicator,
   StyleSheet, PermissionsAndroid, Platform, TouchableOpacity, Alert
@@ -6,6 +6,7 @@ import {
 import axios from "axios";
 import Geolocation from "react-native-geolocation-service";
 import LottieView from "lottie-react-native";
+import { useFocusEffect } from '@react-navigation/native';
 
 const FOURSQUARE_API_KEY = "fsq3EenX8Pa+QekkeDvCdyKQRi6sOfA4lfqvWGarDoTBpUs=";
 const FOURSQUARE_URL = "https://api.foursquare.com/v3/places/search";
@@ -15,9 +16,12 @@ const NearbyScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    requestLocationPermission();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      requestLocationPermission();
+    }, [])
+  );
+  
 
   const requestLocationPermission = async () => {
     if (Platform.OS === "android") {

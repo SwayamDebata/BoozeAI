@@ -5,7 +5,15 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import LottieView from "lottie-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import mobileAds, { InterstitialAd, AdEventType, TestIds } from 'react-native-google-mobile-ads';
 
+mobileAds()
+  .initialize()
+  .then(adapterStatuses => {
+    console.log('Initialization complete!');
+  });
+
+const adUnitId = __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-4693002133615714/2890652520';
 
 const HomeScreen = () => {
     const navigation = useNavigation();
@@ -21,7 +29,20 @@ const HomeScreen = () => {
     const [selectedIngredients, setSelectedIngredients] = useState([]);
     const scaleAnim = useRef(new Animated.Value(1)).current;
     const [showLottieEffect, setShowLottieEffect] = useState(false);
-
+    const [interstitialLoaded, setInterstitialLoaded] = useState(false);
+    const interstitial = InterstitialAd.createForAdRequest(adUnitId, {
+        requestNonPersonalizedAdsOnly: true,
+        keywords: ['drinks', 'beverages', 'cocktails', 'alcohol', 'soft drinks', 'juice', 'smoothies', 'mocktails', 'beer', 'wine', 
+  'spirits', 'whiskey', 'tequila', 'rum', 'vodka', 'wine pairing', 'recipes', 'snacks', 'appetizers', 'desserts', 
+  'fast food', 'vegetarian', 'vegan', 'gluten-free', 'organic food', 'healthy eating', 'street food', 'gourmet', 
+  'dining out', 'cooking', 'clothing', 'streetwear', 'shoes', 'accessories', 'fashion trends', 'summer fashion', 
+  'winter fashion', 'outfit ideas', 'fashionistas', 'designer brands', 'luxury fashion', 'vintage clothing', 
+  'sustainable fashion', 'fashion tips', 'gaming', 'video games', 'esports', 'online games', 'console gaming', 
+  'pc gaming', 'mobile games', 'action games', 'adventure games', 'role-playing games', 'puzzle games', 'strategy games', 
+  'multiplayer games', 'game reviews', 'fitness', 'health', 'travel', 'beauty', 'self-care', 'meditation', 'yoga', 'wellness', 
+  'adventure', 'hiking', 'photography', 'gadgets', 'tech news', 'smartphones', 'laptops', 'software', 'artificial intelligence', 
+  'virtual reality', 'augmented reality', 'tech trends', 'startups', 'web development'],
+    });
     const API_URL = "https://boozeai.onrender.com/api/drinks/suggest";
 
     const moods = [
@@ -142,6 +163,20 @@ const HomeScreen = () => {
 
 
     useEffect(() => {
+        const unsubscribeLoaded = interstitial.addAdEventListener(
+            AdEventType.LOADED,
+            () => {
+                setInterstitialLoaded(true);
+            }
+        );
+        const unsubscribeClosed = interstitial.addAdEventListener(
+            AdEventType.CLOSED,
+            () => {
+                setInterstitialLoaded(false);
+                interstitial.load(); 
+            }
+        );
+        interstitial.load();
         const fetchToken = async () => {
             try {
                 const storedToken = await AsyncStorage.getItem("token");
@@ -156,8 +191,18 @@ const HomeScreen = () => {
             }
         };
         fetchToken();
+        return () => {
+        unsubscribeLoaded();
+        unsubscribeClosed();
+    };
     }, []);
-
+    const showInterstitial = () => {
+        if (interstitialLoaded) {
+            interstitial.show();
+        } else {
+            console.log('Interstitial not ready yet');
+        }
+    };
     const getDrinkSuggestion = async () => {
         if (!token || typeof token !== "string") {
             navigation.replace("AuthScreen");
@@ -169,6 +214,7 @@ const HomeScreen = () => {
         setDrinkSuggestion(null);
 
         try {
+            showInterstitial();
             const payload = {
                 mood,
                 weather,

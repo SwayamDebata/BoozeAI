@@ -34,7 +34,7 @@ router.post(
   asyncHandler(async (req, res) => {
     
     const { mood, weather, ingredients, instruction, budget } = req.body;    
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const prompt = `Suggest a unique cocktail recipe based on the following details:
 - If Whiskey is suggested, randomly choose between Amrut, Paul John, Royal Stag, Blenders Pride, Antiquity Blue, Signature, McDowell's No.1, 100 Pipers, Black Dog, Imperial Blue.

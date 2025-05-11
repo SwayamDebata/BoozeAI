@@ -20,14 +20,49 @@ const DrinkDetailScreen = ({ route, navigation }) => {
 
     const extractDetails = (description) => {
         const details = {};
-        description.split("\n").forEach((line) => {
-            if (line.startsWith("Cocktail Name:")) details.name = line.replace("Cocktail Name:", "").trim();
-            else if (line.startsWith("Mood:")) details.mood = line.replace("Mood:", "").trim();
-            else if (line.startsWith("Weather:")) details.weather = line.replace("Weather:", "").trim();
-            else if (line.startsWith("Ingredients:")) details.ingredients = line.replace("Ingredients:", "").trim();
-            else if (line.startsWith("Instructions:")) details.instructions = line.replace("Instructions:", "").trim();
-            else if (line.startsWith("Budget:")) details.budget = line.replace("Budget:", "").trim();
-        });
+        const lines = description.split("\n");
+        let currentKey = null;
+    
+        for (let line of lines) {
+            line = line.trim();
+    
+            if (line.startsWith("Cocktail Name:")) {
+                details.name = line.replace("Cocktail Name:", "").trim();
+                currentKey = null;
+            } else if (line.startsWith("Mood:")) {
+                details.mood = line.replace("Mood:", "").trim();
+                currentKey = null;
+            } else if (line.startsWith("Weather:")) {
+                details.weather = line.replace("Weather:", "").trim();
+                currentKey = null;
+            } else if (line.startsWith("Ingredients:")) {
+                const content = line.replace("Ingredients:", "").trim();
+                if (content) {
+                    details.ingredients = content;
+                    currentKey = null;
+                } else {
+                    details.ingredients = "";
+                    currentKey = "ingredients";
+                }
+            } else if (line.startsWith("Instructions:")) {
+                const content = line.replace("Instructions:", "").trim();
+                if (content) {
+                    details.instructions = content;
+                    currentKey = null;
+                } else {
+                    details.instructions = "";
+                    currentKey = "instructions";
+                }
+            } else if (line.startsWith("Budget:")) {
+                details.budget = line.replace("Budget:", "").trim();
+                currentKey = null;
+            } else if (currentKey === "ingredients") {
+                details.ingredients += (details.ingredients ? "\n" : "") + line;
+            } else if (currentKey === "instructions") {
+                details.instructions += (details.instructions ? "\n" : "") + line;
+            }
+        }
+    
         return details;
     };
 

@@ -9,7 +9,10 @@ import FavouriteScreen from "./src/screens/FavouriteScreen";
 import NearbyScreen from "./src/screens/NearbyScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import DrinkDetailScreen from "./src/screens/DrinkDetailScreen";
+import TruthOrDareScreen from "./src/screens/TruthOrDareScreen";
 import mobileAds from "react-native-google-mobile-ads"; 
+import { StatusBar } from "react-native";
+
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -17,9 +20,12 @@ import homeIcon from "./assets/home.png";
 import favouriteIcon from "./assets/favourite.png";
 import nearbyIcon from "./assets/nearby.png";
 import profileIcon from "./assets/profile-user.png";
+import TruthOrDare from "./assets/beer.png";
 
 function MainTabs() {
   return (
+    <>
+    <StatusBar backgroundColor="#1C1C3A" barStyle="light-content" />
     <Tab.Navigator
       screenOptions={{
         tabBarActiveTintColor: "#fff", // Neon Red (Active Tab)
@@ -70,6 +76,26 @@ function MainTabs() {
         }}
       />
       <Tab.Screen
+  name="Game"
+  component={TruthOrDareScreen}
+  options={{
+    tabBarIcon: ({ focused }) => (
+      <Image
+        source={TruthOrDare}
+        style={{
+          width: 24,
+          height: 24,
+          tintColor: focused ? "#8e44ad" : "#B0B0B0"
+        }}
+      />
+    ),
+    headerStyle: { backgroundColor: "#1C1C3A" },
+    headerTitleStyle: { color: "#fff" },
+    title: "Truth or Dare",
+  }}
+/>
+
+      <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
@@ -84,6 +110,7 @@ function MainTabs() {
         }}
       />
     </Tab.Navigator>
+    </>
   );
 }
 

@@ -85,6 +85,7 @@ const HomeScreen = () => {
         { label: "mango", animation: require("../../assets/mango.json") },
         { label: "watermelon", animation: require("../../assets/watermelon.json") },
         { label: "redbull", animation: require("../../assets/redbull.json") },
+        { label: "rose syrup", animation: require("../../assets/rose.json") },
     ];
 
     const instructionsList = [
@@ -94,6 +95,10 @@ const HomeScreen = () => {
         { label: "Vodka", animation: require("../../assets/vodka.json") },
         { label: "Gin", animation: require("../../assets/gin.json") },
         { label: "Tequila", animation: require("../../assets/tequila.json") },
+        { label: "Brandy", animation: require("../../assets/brandy.json") },
+        { label: "Bourbon", animation: require("../../assets/bourbon.json") },
+        { label: "Wine", animation: require("../../assets/wine.json") },
+        { label: "Breezer", animation: require("../../assets/breezer.json") },
     ];
 
 

@@ -14,11 +14,27 @@
       },
       "oauth_client": [
         {
+          "client_id": "681703836270-4klj6cq8fj0mrp56o4tngirq1ck249ms.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.boozeai_frontend",
+            "certificate_hash": "ba62307e4a5f3284fbf1bdee4c8ee7e130b8acd0"
+          }
+        },
+        {
           "client_id": "681703836270-h7dkjdi9nkga9c03nmsfd70413nrlle4.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.boozeai_frontend",
             "certificate_hash": "dd71b254c99e7c95dc0b3e462b2731a9fbdf46d2"
+          }
+        },
+        {
+          "client_id": "681703836270-oejhhdnmjn80h61hrim4rpkbpvu1e3kk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.boozeai_frontend",
+            "certificate_hash": "0c4947cf114b24e76f46fdad749c73cb7a5c525d"
           }
         },
         {

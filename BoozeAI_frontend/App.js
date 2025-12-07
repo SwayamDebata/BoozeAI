@@ -2,7 +2,7 @@ import React, {useEffect} from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { Image } from "react-native"; // Import Image component
+import { Image, Platform } from "react-native"; // Import Image component
 import AuthScreen from "./src/screens/AuthScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import FavouriteScreen from "./src/screens/FavouriteScreen";
@@ -10,7 +10,9 @@ import NearbyScreen from "./src/screens/NearbyScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import DrinkDetailScreen from "./src/screens/DrinkDetailScreen";
 import TruthOrDareScreen from "./src/screens/TruthOrDareScreen";
+import KnowledgeHubScreen from "./src/screens/KnowledgeHubScreen";
 import mobileAds from "react-native-google-mobile-ads"; 
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'; 
 import { StatusBar } from "react-native";
 
 const Stack = createStackNavigator();
@@ -21,6 +23,7 @@ import favouriteIcon from "./assets/favourite.png";
 import nearbyIcon from "./assets/nearby.png";
 import profileIcon from "./assets/profile-user.png";
 import TruthOrDare from "./assets/beer.png";
+import knowledgeIcon from "./assets/knowledge.png";
 
 function MainTabs() {
   return (
@@ -30,7 +33,12 @@ function MainTabs() {
       screenOptions={{
         tabBarActiveTintColor: "#fff", // Neon Red (Active Tab)
         tabBarInactiveTintColor: "#A8A8A8", // Muted Cyan (Inactive Tab)
-        tabBarStyle: { backgroundColor: "#1C1C3A", height: 50 }, // Dark Background
+        tabBarStyle: { 
+          backgroundColor: "#1C1C3A", 
+          height: Platform.OS === 'android' ? 70 : 60,
+          paddingBottom: Platform.OS === 'android' ? 10 : 5,
+          paddingTop: 2,
+        }, // Dark Background
       }}
     >
       <Tab.Screen
@@ -43,7 +51,10 @@ function MainTabs() {
               style={{ width: 24, height: 24, tintColor: focused ? "#8e44ad" : "#B0B0B0" }} // Warm Orange (Active), Muted Gray (Inactive)
             />
           ),
-          headerStyle: { backgroundColor: "#1C1C3A", height: 60 }, // Header Background
+          headerStyle: { 
+            backgroundColor: "#1C1C3A", 
+            height: Platform.OS === 'android' ? 80 : 60 
+          }, // Header Background
           headerTitleStyle: { color: "#fff" }, // Soft White Text
         }}
       />
@@ -57,7 +68,10 @@ function MainTabs() {
               style={{ width: 24, height: 24, tintColor: focused ? "#8e44ad" : "#B0B0B0" }}
             />
           ),
-          headerStyle: { backgroundColor: "#1C1C3A" },
+          headerStyle: { 
+            backgroundColor: "#1C1C3A",
+            height: Platform.OS === 'android' ? 80 : 60
+          },
           headerTitleStyle: { color: "#fff" },
         }}
       />
@@ -71,7 +85,10 @@ function MainTabs() {
               style={{ width: 24, height: 24, tintColor: focused ? "#8e44ad" : "#B0B0B0" }}
             />
           ),
-          headerStyle: { backgroundColor: "#1C1C3A" },
+          headerStyle: { 
+            backgroundColor: "#1C1C3A",
+            height: Platform.OS === 'android' ? 80 : 60
+          },
           headerTitleStyle: { color: "#fff" },
         }}
       />
@@ -89,11 +106,32 @@ function MainTabs() {
         }}
       />
     ),
-    headerStyle: { backgroundColor: "#1C1C3A" },
+    headerStyle: { 
+      backgroundColor: "#1C1C3A",
+      height: Platform.OS === 'android' ? 80 : 60
+    },
     headerTitleStyle: { color: "#fff" },
     title: "Truth or Dare",
   }}
 />
+
+      <Tab.Screen
+        name="Learn"
+        component={KnowledgeHubScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <Image
+              source={knowledgeIcon}
+              style={{ width: 24, height: 24, tintColor: focused ? "#8e44ad" : "#B0B0B0" }}
+            />
+          ),
+          headerStyle: { 
+            backgroundColor: "#1C1C3A",
+            height: Platform.OS === 'android' ? 80 : 60
+          },
+          headerTitleStyle: { color: "#fff" },
+        }}
+      />
 
       <Tab.Screen
         name="Profile"
@@ -105,7 +143,10 @@ function MainTabs() {
               style={{ width: 24, height: 24, tintColor: focused ? "#8e44ad" : "#B0B0B0" }}
             />
           ),
-          headerStyle: { backgroundColor: "#1C1C3A" },
+          headerStyle: { 
+            backgroundColor: "#1C1C3A",
+            height: Platform.OS === 'android' ? 80 : 60
+          },
           headerTitleStyle: { color: "#fff" },
         }}
       />

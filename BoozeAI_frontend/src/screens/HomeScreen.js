@@ -6,6 +6,9 @@ import { useNavigation } from "@react-navigation/native";
 import LottieView from "lottie-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import mobileAds, { InterstitialAd, AdEventType, TestIds } from 'react-native-google-mobile-ads';
+import { accelerometer, setUpdateIntervalForType, SensorTypes } from "react-native-sensors";
+import { map, filter } from "rxjs/operators";
+import { Vibration } from "react-native";
 
 mobileAds()
   .initialize()
@@ -31,6 +34,8 @@ const HomeScreen = () => {
     const [showLottieEffect, setShowLottieEffect] = useState(false);
     const [interstitials, setInterstitials] = useState(null);
     const interstitialLoadedRef = useRef(false);
+    const lastShake = useRef(0);
+    const shakeTextAnim = useRef(new Animated.Value(1)).current;
 
     const interstitial = InterstitialAd.createForAdRequest(adUnitId, {
         requestNonPersonalizedAdsOnly: true,
@@ -53,6 +58,9 @@ const HomeScreen = () => {
         { label: "Chill", animation: require("../../assets/chill.json") },
         { label: "Party", animation: require("../../assets/party.json") },
         { label: "Tired", animation: require("../../assets/tired.json") },
+        { label: "Nostalgic", animation: require("../../assets/nostalgic.json") },
+        { label: "Breakup", animation: require("../../assets/broken.json") },
+        { label: "Romantic Date", animation: require("../../assets/date.json") },
     ];
 
     const weatherOptions = [
@@ -61,7 +69,7 @@ const HomeScreen = () => {
         { label: "Cold", animation: require("../../assets/cold.json") },
         { label: "Warm", animation: require("../../assets/warm.json") },
     ];
-    const budgets = ["₹200-400", "₹400-600", "₹600-1000", "more"];
+    const budgets = ["₹200-400", "₹400-600", "₹600-1000", "₹1000 & above"];
     const screenWidth = Dimensions.get('window').width;
 
 
@@ -220,9 +228,139 @@ const HomeScreen = () => {
         };
     }, []);
     
-    const getDrinkSuggestion = async () => {
+    useEffect(() => {
+        // Shake Text Pulse Animation
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(shakeTextAnim, { toValue: 1.1, duration: 800, useNativeDriver: true }),
+                Animated.timing(shakeTextAnim, { toValue: 1, duration: 800, useNativeDriver: true })
+            ])
+        ).start();
+
+        // Sensor Subscription
+        try {
+            setUpdateIntervalForType(SensorTypes.accelerometer, 400); // moderate check
+            const subscription = accelerometer
+                .pipe(
+                    map(({ x, y, z }) => Math.sqrt(x * x + y * y + z * z)),
+                    filter(speed => speed > 25) // Shake threshold
+                )
+                .subscribe(
+                    speed => {
+                        const now = Date.now();
+                        if (now - lastShake.current > 3000) { // 3s cooldown
+                            lastShake.current = now;
+                            handleShake();
+                        }
+                    },
+                    error => {
+                        console.log("Sensor subscription error:", error);
+                    }
+                );
+
+            return () => {
+                subscription && subscription.unsubscribe();
+            };
+        } catch (e) {
+            console.log("Sensors not available (requires rebuild):", e);
+            // Fallback or do nothing - feature just won't work until rebuild
+        }
+    }, []);
+
+    const localDrinks = [
+        { 
+            id: "l1", 
+            name: "The Galaxy Walker", 
+            suggestion: `Cocktail Name: The Galaxy Walker\nMood: Party\nWeather: Clear\nIngredients:\n60ml Vodka\n30ml Blue Curacao\nLemonade\nEdible Gold Dust\nInstructions:\n1. Fill a glass with ice.\n2. Pour vodka and blue curacao.\n3. Top with lemonade and stir gently.\n4. Sprinkle gold dust for a cosmic effect.\nBudget: ₹600-1000`
+        },
+        { 
+            id: "l2", 
+            name: "Sunset Overdrive", 
+            suggestion: `Cocktail Name: Sunset Overdrive\nMood: Chill\nWeather: Warm\nIngredients:\n45ml Tequila\n90ml Orange Juice\nSplash of Grenadine\nCherry for garnish\nInstructions:\n1. Pour tequila and orange juice into an ice-filled glass.\n2. Slowly pour grenadine down the side to create a sunset gradient.\n3. Garnish with a cherry.\nBudget: ₹400-600`
+        },
+        { 
+            id: "l3", 
+            name: "Midnight Mule", 
+            suggestion: `Cocktail Name: Midnight Mule\nMood: Nostalgic\nWeather: Cool\nIngredients:\n60ml Dark Rum\n15ml Lime Juice\nGinger Beer\nMint leaves\nInstructions:\n1. Squeeze lime into a copper mug.\n2. Add ice and dark rum.\n3. Top with ginger beer and stir.\n4. Garnish with fresh mint.\nBudget: ₹400-600`
+        },
+        { 
+            id: "l4", 
+            name: "Electric Lemonade", 
+            suggestion: `Cocktail Name: Electric Lemonade\nMood: Energetic\nWeather: Sunny\nIngredients:\n45ml Gin\n30ml Blue Curacao\nSour Mix\nLemon-Lime Soda\nInstructions:\n1. Shake gin, blue curacao, and sour mix with ice.\n2. Strain into a glass.\n3. Top with soda and garnish with a lemon wheel.\nBudget: ₹400-600`
+        },
+        { 
+            id: "l5", 
+            name: "Spicy Señorita", 
+            suggestion: `Cocktail Name: Spicy Señorita\nMood: Bold\nWeather: Hot\nIngredients:\n60ml Tequila\n2 Jalapeño slices\n30ml Grapefruit Juice\nSoda Water\nChili Salt\nInstructions:\n1. Rim glass with chili salt.\n2. Muddle jalapeños in shaker.\n3. Add tequila, juice, and ice. Shake well.\n4. Strain over fresh ice and top with soda.\nBudget: ₹600-1000`
+        },
+        { 
+            id: "l6", 
+            name: "Velvet Espresso", 
+            suggestion: `Cocktail Name: Velvet Espresso\nMood: Tired\nWeather: Rainy\nIngredients:\n45ml Vodka\n30ml Coffee Liqueur\n1 shot Espresso\n3 Coffee Beans\nInstructions:\n1. Brew espresso and let it cool slightly.\n2. Shake all liquid ingredients vigorously with ice.\n3. Strain into a chilled martini glass.\n4. Garnish with coffee beans.\nBudget: ₹600-1000`
+        },
+        {
+            id: "l7",
+            name: "Ocean Breeze",
+            suggestion: `Cocktail Name: Ocean Breeze\nMood: Chill\nWeather: Sunny\nIngredients:\n60ml White Rum\n30ml Blue Curacao\nPineapple Juice\nLime Juice\nInstructions:\n1. Fill a glass with ice.\n2. Pour rum and Blue Curacao.\n3. Top with pineapple juice and a splash of lime.\n4. Garnish with a pineapple wedge.\nBudget: ₹400-600`
+        },
+        {
+            id: "l8",
+            name: "Cherry Bomb",
+            suggestion: `Cocktail Name: Cherry Bomb\nMood: Party\nWeather: Night\nIngredients:\n60ml Bourbon\n15ml Cherry Liqueur\nCola\nMaraschino Cherry\nInstructions:\n1. Fill a tall glass with ice.\n2. Pour bourbon and cherry liqueur.\n3. Top with cola.\n4. Garnish with a cherry.\nBudget: ₹600-1000`
+        },
+        {
+            id: "l9",
+            name: "Golden Hour",
+            suggestion: `Cocktail Name: Golden Hour\nMood: Romantic\nWeather: Sunset\nIngredients:\n60ml Aperol\n90ml Prosecco\nSplash of Soda Water\nOrange Slice\nInstructions:\n1. Fill a wine glass with ice.\n2. Pour Prosecco, then Aperol.\n3. Add a splash of soda water.\n4. Garnish with an orange slice.\nBudget: ₹1000-10000`
+        },
+        {
+            id: "l10",
+            name: "Mint Julep",
+            suggestion: `Cocktail Name: Mint Julep\nMood: Classy\nWeather: Hot\nIngredients:\n60ml Bourbon\nFresh Mint Leaves\n1 Sugar Cube\nCrushed Ice\nInstructions:\n1. Muddle mint and sugar in a cup.\n2. Fill with crushed ice.\n3. Pour bourbon over the ice.\n4. Stir until the cup frosts.\nBudget: ₹600-1000`
+        },
+         {
+            id: "l11",
+            name: "Tropical Storm",
+            suggestion: `Cocktail Name: Tropical Storm\nMood: Adventurous\nWeather: Stormy\nIngredients:\n60ml Dark Rum\n60ml Pineapple Juice\n30ml Orange Juice\nSplash of Grenadine\nInstructions:\n1. Shake all ingredients with ice.\n2. Strain into a glass filled with fresh ice.\n3. Garnish with an orange slice and cherry.\nBudget: ₹400-600`
+        },
+        {
+            id: "l12",
+            name: "Lavender Haze",
+            suggestion: `Cocktail Name: Lavender Haze\nMood: Relaxed\nWeather: Spring\nIngredients:\n45ml Gin\n15ml Lavender Syrup\n30ml Lemon Juice\nSoda Water\nInstructions:\n1. Shake gin, lemon juice, and syrup with ice.\n2. Strain into a glass with ice.\n3. Top with soda water.\n4. Garnish with a lavender sprig.\nBudget: ₹600-1000`
+        }
+    ];
+
+    const handleShake = () => {
+        Vibration.vibrate(100); // Haptic feedback
+        // Randomize Selections for UI effect
+        const rMood = moods[Math.floor(Math.random() * moods.length)].label;
+        const rWeather = weatherOptions[Math.floor(Math.random() * weatherOptions.length)].label;
+        const rBudget = budgets[Math.floor(Math.random() * budgets.length)];
+
+        // Update UI
+        setMood(rMood);
+        setWeather(rWeather);
+        setBudget(rBudget);
+
+        // Pick a random local drink
+        const randomDrink = localDrinks[Math.floor(Math.random() * localDrinks.length)];
+        
+        // Construct the drink object matching API format
+        const suggestionObj = {
+            id: randomDrink.id,
+            name: randomDrink.name,
+            description: randomDrink.suggestion
+        };
+
+        setDrinkSuggestion(suggestionObj);
+        
+        // Navigate immediately with the local data
+        navigation.navigate("DrinkDetail", { drinkSuggestion: suggestionObj, token: token });
+    };
+
+    const getDrinkSuggestion = async (overrides = {}) => {
         if (!token || typeof token !== "string") {
-            navigation.replace("AuthScreen");
+            navigation.replace("Auth");
             return;
         }
 
@@ -240,9 +378,9 @@ const HomeScreen = () => {
             }
 
             const payload = {
-                mood,
-                weather,
-                budget,
+                mood: overrides.mood || mood,
+                weather: overrides.weather || weather,
+                budget: overrides.budget || budget,
                 ...(selectedIngredients.length > 0 && { ingredients: selectedIngredients.join(", ") }),
                 ...(selectedInstruction && { instruction: selectedInstruction }),
             };
@@ -383,8 +521,18 @@ const DraggableBudgetSlider = ({ budget, setBudget }) => {
 
     return (
         <View style={styles.screen}>
-            <ScrollView contentContainerStyle={styles.container}>
+            <ScrollView 
+                contentContainerStyle={styles.container}
+                showsVerticalScrollIndicator={false}
+            >
                 <Text style={styles.title}>Find Your Perfect Drink</Text>
+                
+                <Animated.View style={{ transform: [{ scale: shakeTextAnim }], alignItems: 'center', marginBottom: 20 }}>
+                     <View style={styles.shakeBadge}>
+                        <Text style={styles.shakeText}>Shake phone for a surprise! 🎲</Text>
+                     </View>
+                </Animated.View>
+
                 <Text style={styles.label}>Mood</Text>
                 <View style={styles.cardContainer}>
                     {moods.map((item) => (
@@ -497,6 +645,12 @@ const DraggableBudgetSlider = ({ budget, setBudget }) => {
 
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: "#1C1C3A" },
+    container: {
+        flexGrow: 1,
+        paddingHorizontal: 16,
+        paddingTop: 20,
+        paddingBottom: 50,
+    },
     title: { fontSize: 22, fontWeight: "bold", color: "#D1C4E9", marginBottom: 15, textAlign: "center" },
     label: { fontSize: 16, fontWeight: "bold", color: "#C5CAE9", marginBottom: 8, textAlign: "center" },
     cardContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginBottom: 10 },
@@ -598,6 +752,20 @@ const styles = StyleSheet.create({
         width: '80%',
         marginTop: 10,
     },
+    shakeBadge: {
+        backgroundColor: 'rgba(255, 215, 0, 0.15)', // Gold with opacity
+        paddingVertical: 5,
+        paddingHorizontal: 15,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#FFD700'
+    },
+    shakeText: {
+        color: '#FFD700',
+        fontWeight: 'bold',
+        fontSize: 12,
+        letterSpacing: 0.5
+    }
 });
 
 

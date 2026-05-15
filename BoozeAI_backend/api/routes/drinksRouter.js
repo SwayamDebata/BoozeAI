@@ -1,5 +1,4 @@
 const express = require("express");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
 const Drink = require("../../models/drinksModel");
@@ -7,7 +6,8 @@ const User = require("../../models/userModel");
 const { v4: uuidv4 } = require("uuid");
 
 const router = express.Router();
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "openrouter/free";
 
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -33,8 +33,7 @@ router.post(
   authenticate,
   asyncHandler(async (req, res) => {
     
-    const { mood, weather, ingredients, instruction, budget } = req.body;    
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const { mood, weather, ingredients, instruction, budget } = req.body;
 
     const prompt = `Suggest a unique cocktail recipe based on the following details:
 - If Whiskey is suggested, randomly choose between Amrut, Jägermeister, Paul John, Royal Stag, Blenders Pride, Antiquity Blue, Signature, McDowell's No.1, 100 Pipers, Black Dog, Imperial Blue.
@@ -63,27 +62,42 @@ Instructions:  ${instruction}
 Budget: ₹${budget}`;
 
     try {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: OPENROUTER_MODEL,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
 
-      const result = await model.generateContent(prompt);
-      const suggestion = result?.response?.text?.() || result?.response || "No suggestion available";
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenRouter request failed (${response.status}): ${errorText}`);
+      }
 
+      const data = await response.json();
+      const suggestion =
+        data?.choices?.[0]?.message?.content?.trim() || "No suggestion available";
 
       const newDrink = new Drink({
         user: req.userId,
         mood,
         weather,
-        ingredients: ingredients, 
+        ingredients: ingredients,
         instruction,
         budget,
         suggestion,
       });
-      
 
       const savedDrink = await newDrink.save();
 
       res.json({ id: savedDrink._id, suggestion });
     } catch (error) {
-      console.error("Gemini API error:", error.message);
+      console.error("OpenRouter API error:", error.message);
       res.status(500).json({ error: "Failed to generate a drink suggestion", details: error.message });
     }
   })
